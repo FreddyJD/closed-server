@@ -58,11 +58,11 @@ module.exports = {
     plans: {
       "basic": {
         variantId: process.env.LEMON_SQUEEZY_BASIC_VARIANT_ID,
-        price: 5.00
+        price: 18.00
       },
       "pro": {
         variantId: process.env.LEMON_SQUEEZY_PRO_VARIANT_ID,
-        price: 25.00
+        price: 30.00
       }
     }
   },
