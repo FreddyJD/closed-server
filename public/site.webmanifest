@@ -1,0 +1,22 @@
+{
+    "name": "Closed AI - AI Resolver for Sales Professionals",
+    "short_name": "Closed AI",
+    "description": "AI-powered sales assistance that records calls and provides real-time battle cards for handling objections",
+    "icons": [
+        {
+            "src": "/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "theme_color": "#002649",
+    "background_color": "#1B1B20",
+    "display": "standalone",
+    "start_url": "/",
+    "scope": "/"
+}
