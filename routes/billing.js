@@ -3,7 +3,51 @@ const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const lemonSqueezyService = require('../services/lemonSqueezy');
-const { generateLicenseKey } = require('../utils/license');
+
+// Utility function to deactivate team members when subscription becomes inactive
+async function deactivateTeamMembersForInactiveSubscription(subscriptionId) {
+    try {
+        console.log('🚫 Deactivating team members for inactive subscription:', subscriptionId);
+        
+        // Update all team members to 'suspended' status
+        const updatedMembers = await db('team_members')
+            .where('subscription_id', subscriptionId)
+            .update({ 
+                status: 'suspended',
+                suspended_at: new Date()
+            })
+            .returning(['email', 'status']);
+        
+        console.log('✅ Deactivated team members:', updatedMembers);
+        return updatedMembers;
+    } catch (error) {
+        console.error('❌ Error deactivating team members:', error);
+        throw error;
+    }
+}
+
+// Utility function to reactivate team members when subscription becomes active
+async function reactivateTeamMembersForActiveSubscription(subscriptionId) {
+    try {
+        console.log('✅ Reactivating team members for active subscription:', subscriptionId);
+        
+        // Update suspended team members back to 'active' status
+        const updatedMembers = await db('team_members')
+            .where('subscription_id', subscriptionId)
+            .where('status', 'suspended')
+            .update({ 
+                status: 'active',
+                suspended_at: null
+            })
+            .returning(['email', 'status']);
+        
+        console.log('✅ Reactivated team members:', updatedMembers);
+        return updatedMembers;
+    } catch (error) {
+        console.error('❌ Error reactivating team members:', error);
+        throw error;
+    }
+}
 
 // Subscribe route
 router.get('/subscribe', requireAuth, async (req, res) => {
@@ -47,224 +91,115 @@ router.get('/subscribe', requireAuth, async (req, res) => {
     }
 });
 
-// Add seat
-router.post('/dashboard/add-seat', requireAuth, async (req, res) => {
+// Add team member (simple email-based)
+router.post('/dashboard/add-team-member', requireAuth, async (req, res) => {
     try {
         const { email } = req.body;
         const user = req.user;
         
-        console.log('🔍 DEBUG: Adding seat for user:', user.id, 'email:', email);
+        console.log('👥 Adding team member:', email, 'for user:', user.id);
         
         const subscription = await db('subscriptions')
             .where('user_id', user.id)
             .where('status', 'active')
             .first();
         
-        console.log('🔍 DEBUG: Found subscription for seat:', subscription ? subscription.id : 'NONE');
-        
         if (!subscription) {
-            console.log('❌ DEBUG: No active subscription found for user');
+            console.log('❌ No active subscription found');
             return res.redirect('/dashboard?error=no_subscription');
         }
         
-        // Count current seats
-        const currentSeats = await db('seats')
+        // Count current team members
+        const currentMembers = await db('team_members')
             .where('subscription_id', subscription.id)
-            .where('status', '!=', 'revoked')
             .count('* as count')
             .first();
         
-        const currentSeatCount = parseInt(currentSeats.count);
-        const newSeatCount = currentSeatCount + 1;
+        const currentMemberCount = parseInt(currentMembers.count);
+        const newMemberCount = currentMemberCount + 1;
         
-        console.log('🔍 DEBUG: Current seats:', currentSeatCount, '→ New seats:', newSeatCount);
-        
-        // Update Lemon Squeezy subscription quantity first
-        if (subscription.lemon_squeezy_subscription_id) {
-            console.log('💰 Updating Lemon Squeezy subscription quantity...');
-            try {
-                await lemonSqueezyService.updateSubscriptionQuantity(
-                    subscription.lemon_squeezy_subscription_id, 
-                    newSeatCount
-                );
-                console.log('✅ Lemon Squeezy subscription updated - billing will be processed');
-            } catch (lemonSqueezyError) {
-                console.error('❌ Failed to update Lemon Squeezy subscription:', lemonSqueezyError);
-                return res.redirect('/dashboard?error=billing_update_failed');
-            }
-        }
-        
-        // Generate license key
-        const licenseKey = generateLicenseKey();
-        console.log('🔍 DEBUG: Generated license key:', licenseKey);
-        
-        const seatData = {
-            subscription_id: subscription.id,
-            user_email: email,
-            license_key: licenseKey,
-            status: 'unused'
-        };
-        
-        // Update our database seat count
-        await db('subscriptions')
-            .where('id', subscription.id)
-            .update({ 
-                seats: newSeatCount,
-                updated_at: new Date()
-            });
-        
-        console.log('🔍 DEBUG: Inserting seat data:', seatData);
-        const result = await db('seats').insert(seatData).returning('*');
-        console.log('✅ DEBUG: Seat created successfully:', result);
-        
-        res.redirect('/dashboard?success=seat_added');
-    } catch (error) {
-        console.error('❌ Add seat error:', error);
-        res.redirect('/dashboard?error=add_seat_failed');
-    }
-});
-
-// Validate billing status
-router.get('/dashboard/validate-billing', requireAuth, async (req, res) => {
-    try {
-        const user = req.user;
-        
-        // Get subscription from database
-        const subscription = await db('subscriptions')
-            .where('user_id', user.id)
-            .where('status', 'active')
-            .first();
-        
-        if (!subscription) {
-            return res.json({ 
-                error: 'No active subscription found',
-                dbSubscription: null,
-                lemonSqueezySubscription: null
-            });
-        }
-        
-        // Count seats in database
-        const seats = await db('seats')
-            .where('subscription_id', subscription.id)
-            .where('status', '!=', 'revoked');
-        
-        let lemonSqueezyData = null;
-        let billingStatus = 'unknown';
-        
-        // Get current status from Lemon Squeezy
-        if (subscription.lemon_squeezy_subscription_id) {
-            try {
-                lemonSqueezyData = await lemonSqueezyService.getSubscription(subscription.lemon_squeezy_subscription_id);
-                billingStatus = 'connected';
-            } catch (error) {
-                console.error('Failed to fetch Lemon Squeezy data:', error);
-                billingStatus = 'api_error';
-            }
-        }
-        
-        const validation = {
-            timestamp: new Date().toISOString(),
-            billingStatus,
-            database: {
-                subscriptionId: subscription.id,
-                lemonSqueezyId: subscription.lemon_squeezy_subscription_id,
-                status: subscription.status,
-                seats: subscription.seats,
-                actualSeats: seats.length,
-                plan: subscription.plan,
-                pricePerSeat: subscription.price_per_seat
-            },
-            lemonSqueezy: lemonSqueezyData ? {
-                id: lemonSqueezyData.id,
-                status: lemonSqueezyData.attributes.status,
-                // Check for subscription items to see quantity
-                quantity: lemonSqueezyData.attributes.quantity || 'N/A',
-                nextPayment: lemonSqueezyData.attributes.renews_at,
-                createdAt: lemonSqueezyData.attributes.created_at
-            } : null,
-            seatsDetails: seats.map(seat => ({
-                id: seat.id,
-                email: seat.user_email,
-                licenseKey: seat.license_key,
-                status: seat.status,
-                createdAt: seat.created_at
-            })),
-            validation: {
-                seatsMatch: subscription.seats === seats.length,
-                subscriptionActive: subscription.status === 'active',
-                lemonSqueezyConnected: !!lemonSqueezyData
-            }
-        };
-        
-        res.json(validation);
-    } catch (error) {
-        console.error('❌ Billing validation error:', error);
-        res.status(500).json({ error: 'Failed to validate billing', details: error.message });
-    }
-});
-
-// Revoke seat
-router.post('/dashboard/revoke-seat', requireAuth, async (req, res) => {
-    try {
-        const { seat_id } = req.body;
-        const user = req.user;
-        
-        console.log('🔍 DEBUG: Revoking seat:', seat_id, 'for user:', user.id);
-        
-        // Verify seat belongs to user's subscription
-        const seat = await db('seats')
-            .join('subscriptions', 'seats.subscription_id', 'subscriptions.id')
-            .where('seats.id', seat_id)
-            .where('subscriptions.user_id', user.id)
-            .select('seats.*', 'subscriptions.lemon_squeezy_subscription_id')
-            .first();
-        
-        if (seat && seat.status !== 'revoked') {
-            // Count active seats before revoking
-            const currentSeats = await db('seats')
-                .where('subscription_id', seat.subscription_id)
-                .where('status', '!=', 'revoked')
-                .count('* as count')
-                .first();
+        // If adding member exceeds seat limit, we need to upgrade the subscription
+        if (newMemberCount > subscription.seats) {
+            console.log('💰 Upgrading subscription seats from', subscription.seats, 'to', newMemberCount);
             
-            const currentSeatCount = parseInt(currentSeats.count);
-            const newSeatCount = Math.max(1, currentSeatCount - 1); // Minimum 1 seat
-            
-            console.log('🔍 DEBUG: Current seats:', currentSeatCount, '→ New seats:', newSeatCount);
-            
-            // Update Lemon Squeezy subscription quantity first
-            if (seat.lemon_squeezy_subscription_id && newSeatCount !== currentSeatCount) {
-                console.log('💰 Reducing Lemon Squeezy subscription quantity...');
+            // Update Lemon Squeezy subscription quantity if we have a subscription ID
+            if (subscription.lemon_squeezy_subscription_id) {
                 try {
                     await lemonSqueezyService.updateSubscriptionQuantity(
-                        seat.lemon_squeezy_subscription_id, 
-                        newSeatCount
+                        subscription.lemon_squeezy_subscription_id, 
+                        newMemberCount
                     );
-                    console.log('✅ Lemon Squeezy subscription reduced - billing will be adjusted');
+                    console.log('✅ Lemon Squeezy subscription upgraded');
                 } catch (lemonSqueezyError) {
-                    console.error('❌ Failed to update Lemon Squeezy subscription:', lemonSqueezyError);
-                    return res.redirect('/dashboard?error=billing_update_failed');
+                    console.error('❌ Failed to upgrade Lemon Squeezy subscription:', lemonSqueezyError);
+                    return res.redirect('/dashboard?error=billing_upgrade_failed');
                 }
             }
             
-            // Revoke the seat in our database
-            await db('seats').where('id', seat_id).update({ status: 'revoked' });
-            
             // Update our database seat count
             await db('subscriptions')
-                .where('id', seat.subscription_id)
+                .where('id', subscription.id)
                 .update({ 
-                    seats: newSeatCount,
+                    seats: newMemberCount,
                     updated_at: new Date()
                 });
             
-            console.log('✅ DEBUG: Seat revoked successfully');
+            console.log('✅ Subscription upgraded to', newMemberCount, 'seats');
         }
         
-        res.redirect('/dashboard?success=seat_revoked');
+        // Check if email is already added
+        const existingMember = await db('team_members')
+            .where('subscription_id', subscription.id)
+            .where('email', email)
+            .first();
+        
+        if (existingMember) {
+            console.log('❌ Email already added to team');
+            return res.redirect('/dashboard?error=email_already_added');
+        }
+        
+        // Add team member
+        const memberData = {
+            subscription_id: subscription.id,
+            email: email,
+            status: 'invited'
+        };
+        
+        await db('team_members').insert(memberData);
+        console.log('✅ Team member added successfully');
+        
+        res.redirect('/dashboard?success=member_added');
     } catch (error) {
-        console.error('❌ Revoke seat error:', error);
-        res.redirect('/dashboard?error=revoke_failed');
+        console.error('❌ Add team member error:', error);
+        res.redirect('/dashboard?error=add_member_failed');
+    }
+});
+
+// Remove team member
+router.post('/dashboard/remove-team-member', requireAuth, async (req, res) => {
+    try {
+        const { member_id } = req.body;
+        const user = req.user;
+        
+        console.log('🗑️ Removing team member:', member_id, 'for user:', user.id);
+        
+        // Verify member belongs to user's subscription
+        const member = await db('team_members')
+            .join('subscriptions', 'team_members.subscription_id', 'subscriptions.id')
+            .where('team_members.id', member_id)
+            .where('subscriptions.user_id', user.id)
+            .select('team_members.*')
+            .first();
+        
+        if (member) {
+            await db('team_members').where('id', member_id).del();
+            console.log('✅ Team member removed successfully');
+        }
+        
+        res.redirect('/dashboard?success=member_removed');
+    } catch (error) {
+        console.error('❌ Remove team member error:', error);
+        res.redirect('/dashboard?error=remove_member_failed');
     }
 });
 
@@ -279,24 +214,26 @@ router.post('/dashboard/cancel-subscription', requireAuth, async (req, res) => {
             .first();
         
         if (subscription) {
+            console.log('❌ Cancelling subscription:', subscription.id);
+            
+            // First deactivate all team members
+            await deactivateTeamMembersForInactiveSubscription(subscription.id);
+            
+            // Then cancel the subscription
             await db('subscriptions').where('id', subscription.id).update({
                 status: 'cancelled',
                 cancelled_at: new Date()
             });
             
-            // Revoke all seats
-            await db('seats').where('subscription_id', subscription.id).update({
-                status: 'revoked'
-            });
+            console.log('✅ Subscription cancelled successfully');
         }
         
-        res.redirect('/dashboard');
+        res.redirect('/dashboard?success=subscription_cancelled');
     } catch (error) {
-        console.error('Cancel subscription error:', error);
+        console.error('❌ Cancel subscription error:', error);
         res.redirect('/dashboard?error=cancel_failed');
     }
 });
-
 
 // Payment success page
 router.get('/payment/success', async (req, res) => {
@@ -310,7 +247,7 @@ router.get('/payment/success', async (req, res) => {
             <ul>
                 <li>✅ Your subscription is being activated</li>
                 <li>📧 You'll receive email confirmation</li>
-                <li>🔑 License keys will be available in your dashboard</li>
+                <li>👥 Add team members in your dashboard</li>
             </ul>
             <p><a href="/dashboard">Go to Dashboard →</a></p>
         `);
@@ -345,9 +282,43 @@ router.post('/webhooks/lemonsqueezy', async (req, res) => {
         const event = JSON.parse(rawBody);
         console.log('📋 Webhook event type:', event.meta?.event_name);
         
-        // TODO: Verify webhook signature
-        
+        // Process the webhook with Lemon Squeezy service
         await lemonSqueezyService.processWebhookEvent(event, db);
+        
+        // Handle team member status based on subscription changes
+        if (event.meta?.event_name === 'subscription_cancelled' || 
+            event.meta?.event_name === 'subscription_expired') {
+            
+            const subscriptionId = event.data?.attributes?.first_subscription_item?.subscription_id;
+            
+            if (subscriptionId) {
+                // Find our internal subscription
+                const subscription = await db('subscriptions')
+                    .where('lemon_squeezy_subscription_id', subscriptionId)
+                    .first();
+                
+                if (subscription) {
+                    console.log('🚫 Deactivating team members for cancelled/expired subscription');
+                    await deactivateTeamMembersForInactiveSubscription(subscription.id);
+                }
+            }
+        } else if (event.meta?.event_name === 'subscription_resumed' || 
+                   event.meta?.event_name === 'subscription_unpaused') {
+            
+            const subscriptionId = event.data?.attributes?.first_subscription_item?.subscription_id;
+            
+            if (subscriptionId) {
+                // Find our internal subscription
+                const subscription = await db('subscriptions')
+                    .where('lemon_squeezy_subscription_id', subscriptionId)
+                    .first();
+                
+                if (subscription) {
+                    console.log('✅ Reactivating team members for resumed subscription');
+                    await reactivateTeamMembersForActiveSubscription(subscription.id);
+                }
+            }
+        }
         
         console.log('✅ Webhook processed successfully');
         res.status(200).send('OK');
@@ -359,4 +330,7 @@ router.post('/webhooks/lemonsqueezy', async (req, res) => {
     }
 });
 
-module.exports = router; 
+// Export utility functions for use in other parts of the app
+module.exports = router;
+module.exports.deactivateTeamMembersForInactiveSubscription = deactivateTeamMembersForInactiveSubscription;
+module.exports.reactivateTeamMembersForActiveSubscription = reactivateTeamMembersForActiveSubscription; 

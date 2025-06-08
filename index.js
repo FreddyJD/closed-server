@@ -24,8 +24,12 @@ const hbsHelpers = {
         return new Date(date).toLocaleDateString();
     },
     multiply: (a, b) => a * b,
+    subtract: (a, b) => a - b,
     eq: (a, b) => a === b,
-    gt: (a, b) => a > b
+    gt: (a, b) => a > b,
+    lt: (a, b) => a < b,
+    gte: (a, b) => a >= b,
+    lte: (a, b) => a <= b
 };
 
 // Configure Handlebars
@@ -61,20 +65,16 @@ app.use(session({
 }));
 
 // Import route modules
-const webRoutes = require('./routes/web');
 const authRoutes = require('./routes/auth');
+const webRoutes = require('./routes/web');
 const billingRoutes = require('./routes/billing');
 const desktopRoutes = require('./routes/desktop');
-const enterpriseRoutes = require('./routes/enterprise');
-const licenseRoutes = require('./routes/license');
 
 // Use route modules
-app.use('/', webRoutes);              // Web UI routes (/, /login, /dashboard)
 app.use('/auth', authRoutes);         // Auth routes (/auth/workos, /auth/callback, /auth/logout)
+app.use('/', webRoutes);              // Web UI routes (/, /login, /dashboard)
 app.use('/', billingRoutes);          // Billing routes (/subscribe, /dashboard/*, /webhooks/lemonsqueezy)
-app.use('/api', desktopRoutes);       // Desktop API routes (/api/*)
-app.use('/enterprise', enterpriseRoutes); // Enterprise routes (/enterprise/*)
-app.use('/api/license', licenseRoutes); // License API routes (/api/license/*)
+app.use('/api/desktop', desktopRoutes); // Desktop API routes (/api/desktop/*)
 
 // Add transcription status endpoint for compatibility
 app.get('/status', (req, res) => {

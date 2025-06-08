@@ -48,18 +48,16 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     try {
         const user = req.user;
         
-        // Note: Webhooks handle subscription sync automatically, so no manual sync needed
-        
         // Get subscription
         const subscription = await db('subscriptions')
             .where('user_id', user.id)
             .where('status', 'active')
             .first();
         
-        // Get seats
-        let seats = [];
+        // Get team members for this subscription
+        let teamMembers = [];
         if (subscription) {
-            seats = await db('seats')
+            teamMembers = await db('team_members')
                 .where('subscription_id', subscription.id)
                 .orderBy('created_at', 'desc');
         }
@@ -70,7 +68,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
         res.render('dashboard', {
             user,
             subscription,
-            seats,
+            teamMembers,
             trial_active
         });
     } catch (error) {

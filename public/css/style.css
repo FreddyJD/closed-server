@@ -57,6 +57,7 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: var(--base-font-size);
+    padding-top: 100px; /* Space for fixed navbar */
 }
 
 /* ===== TYPOGRAPHY OVERRIDES ===== */
@@ -153,12 +154,6 @@ p {
     border: 1px solid var(--border-gray);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
-    transition: all 0.2s ease;
-}
-
-.card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
 }
 
 .card-header {
@@ -390,14 +385,7 @@ section {
     border-radius: var(--radius-lg);
     padding: var(--space-xl);
     height: 100%;
-    transition: all 0.2s ease;
     text-align: center;
-}
-
-.feature-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-    border-color: var(--primary-color);
 }
 
 .feature-card h3 {
@@ -434,14 +422,12 @@ section {
     border-radius: var(--radius-lg);
     padding: var(--space-xl);
     text-align: center;
-    transition: all 0.2s ease;
     height: 100%;
 }
 
 .pricing-card.featured {
     border-color: var(--primary-color);
     position: relative;
-    transform: scale(1.05);
 }
 
 .pricing-card.featured::before {
@@ -456,15 +442,6 @@ section {
     border-radius: var(--radius-sm);
     font-size: 0.9rem;
     font-weight: 600;
-}
-
-.pricing-card:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-4px);
-}
-
-.pricing-card.featured:hover {
-    transform: scale(1.05) translateY(-4px);
 }
 
 .pricing-price {
@@ -712,13 +689,7 @@ section .fa {
 /* Feature Cards */
 .card {
     border-radius: 1rem;
-    transition: all 0.3s ease;
     border: 1px solid var(--border-gray);
-}
-
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 40px rgba(34, 197, 94, 0.1);
 }
 
 .card-title {
@@ -735,6 +706,18 @@ section .fa {
 /* How It Works Section */
 .bg-success.text-white {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+}
+
+.bg-success.text-white h1,
+.bg-success.text-white h2,
+.bg-success.text-white h3,
+.bg-success.text-white h4,
+.bg-success.text-white h5,
+.bg-success.text-white h6,
+.bg-success.text-white p,
+.bg-success.text-white span,
+.bg-success.text-white i {
+    color: white !important;
 }
 
 /* Feature Lists */

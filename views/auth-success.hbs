@@ -1,0 +1,128 @@
+<div class="hero text-center py-5">
+    <div class="success-icon">🎉</div>
+    <h1>Authentication Successful!</h1>
+    <p class="lead">You've been successfully authenticated with Closed AI</p>
+</div>
+
+<section class="py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-green h-100">
+                <div class="card-body text-center">
+                    <h3>🚀 Return to Closed AI</h3>
+                    <p class="mb-4">Click the button below to return to the desktop app, or use the manual token if needed.</p>
+                    
+                    <a href="{{deepLinkUrl}}" class="btn btn-primary btn-lg mb-3">
+                        🖥️ Open Closed AI Desktop App
+                    </a>
+                    
+                    <div class="mt-4">
+                        <h5>Alternative Methods:</h5>
+                        <p class="text-muted">If the automatic redirect doesn't work, you can manually copy this token:</p>
+                        
+                        <div class="alert alert-info">
+                            <strong>Manual Authentication Token:</strong>
+                            <div class="mt-2">
+                                <code id="authToken" style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 4px; display: block; margin-top: 10px;">{{authToken}}</code>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary mt-2" onclick="copyToken()">
+                                📋 Copy Token
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>What happens next?</h6>
+                        <ul class="list-unstyled text-start">
+                            <li>✅ Your authentication is being processed</li>
+                            <li>🖥️ The desktop app should open automatically</li>
+                            <li>🎯 Start using AI-powered sales assistance</li>
+                            <li>👥 Manage your team from the dashboard</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .success-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    
+    .border-green {
+        border-color: #28a745 !important;
+        border-width: 2px;
+    }
+    
+    code {
+        color: #e83e8c;
+        background-color: #f8f9fa;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        padding: 12px 30px;
+        font-size: 1.1rem;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #004085;
+    }
+</style>
+
+<script>
+    function copyToken() {
+        const tokenElement = document.getElementById('authToken');
+        const token = tokenElement.textContent;
+        
+        navigator.clipboard.writeText(token).then(() => {
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✅ Copied!';
+            button.classList.remove('btn-outline-primary');
+            button.classList.add('btn-success');
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-primary');
+            }, 2000);
+        }).catch(() => {
+            // Fallback for older browsers
+            tokenElement.select();
+            document.execCommand('copy');
+        });
+    }
+    
+    // Auto-redirect after 3 seconds
+    setTimeout(() => {
+        console.log('Auto-redirecting to desktop app...');
+        window.location.href = '{{deepLinkUrl}}';
+    }, 3000);
+    
+    // Show countdown
+    let countdown = 3;
+    const updateCountdown = () => {
+        const countdownElements = document.querySelectorAll('.countdown');
+        countdownElements.forEach(el => el.textContent = countdown);
+        countdown--;
+        if (countdown >= 0) {
+            setTimeout(updateCountdown, 1000);
+        }
+    };
+    
+    // Add countdown display to button
+    document.addEventListener('DOMContentLoaded', () => {
+        const button = document.querySelector('a[href*="closedai://"]');
+        if (button) {
+            const originalText = button.textContent;
+            button.innerHTML = originalText + ' <small class="text-muted">(auto-redirecting in <span class="countdown">3</span>s)</small>';
+            updateCountdown();
+        }
+    });
+</script> 
