@@ -279,16 +279,12 @@ p {
 /* ===== HERO SECTION ===== */
 .hero-section {
     padding: 12rem 0 8rem;
-    /* Fallback gradient background */
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    /* Hero image with overlay */
     background: url('/images/hero-background.jpg') center center;
     background-size: cover;
     background-attachment: fixed;
     width: 100%;
     color: var(--text-dark);
     position: relative;
-    min-height: 100vh;
 }
 
 /* Marketing page hero goes to very top */
