@@ -57,7 +57,16 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: var(--base-font-size);
-    padding-top: 100px; /* Space for fixed navbar */
+}
+
+/* Dashboard pages need padding for fixed navbar */
+body.dashboard-page {
+    padding-top: 100px;
+}
+
+/* Marketing pages with hero - no padding, full background */
+body.marketing-page {
+    padding-top: 0;
 }
 
 /* ===== TYPOGRAPHY OVERRIDES ===== */
@@ -180,6 +189,26 @@ p {
     transform: translateX(-50%);
     z-index: 1000;
     padding: 0.75rem 2rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Navbar on marketing pages with hero - more transparent */
+.marketing-page .navbar {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.marketing-page .navbar-brand,
+.marketing-page .navbar-nav .nav-link {
+    color: white !important;
+}
+
+.marketing-page .navbar-brand:hover,
+.marketing-page .navbar-nav .nav-link:hover {
+    color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .navbar-brand {
@@ -236,11 +265,23 @@ p {
 
 /* ===== HERO SECTION ===== */
 .hero-section {
-    padding: 10rem 0 8rem;
-    background-color: var(--hero-bg);
+    padding: 12rem 0 8rem;
+    /* Fallback gradient background */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    /* Hero image with overlay */
+    background: linear-gradient(135deg, rgba(27, 27, 32, 0.9) 0%, rgba(37, 37, 48, 0.8) 100%), 
+                url('/images/hero-background.jpg') center center;
+    background-size: cover;
+    background-attachment: fixed;
     width: 100%;
     color: var(--white);
     position: relative;
+    min-height: 100vh;
+}
+
+/* Marketing page hero goes to very top */
+.marketing-page .hero-section {
+    padding-top: 8rem; /* Accounting for navbar height */
 }
 
 .hero-section h1 {
@@ -778,6 +819,12 @@ section .fa {
     .hero-section {
         padding: 8rem 0 6rem;
         text-align: center;
+        background-attachment: scroll; /* Better performance on mobile */
+        min-height: 80vh; /* Smaller on mobile */
+    }
+    
+    .marketing-page .hero-section {
+        padding-top: 6rem; /* Less top padding on mobile */
     }
     
     .hero-section h1 {

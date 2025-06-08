@@ -69,7 +69,8 @@ router.get('/dashboard', requireAuth, async (req, res) => {
             user,
             subscription,
             teamMembers,
-            trial_active
+            trial_active,
+            isDashboard: true
         });
     } catch (error) {
         console.error('Dashboard error:', error);

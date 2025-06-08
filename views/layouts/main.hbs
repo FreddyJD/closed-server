@@ -16,12 +16,12 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="{{#if isDashboard}}dashboard-page{{else}}marketing-page{{/if}}">
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light sticky-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="/">
-                <img src="/images/logo.png" alt="Closed AI Logo" class="img-fluid" style="max-width: 100px;">
+                <img src="/images/logo-fill.png" alt="Closed AI Logo" class="img-fluid" style="max-width: 30px;">
                 <span class="ml-2">Closed AI</span>
             </a>
             
