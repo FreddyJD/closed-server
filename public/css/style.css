@@ -259,6 +259,17 @@ p {
     margin: 0 var(--space-sm);
 }
 
+/* Navbar button alignment */
+.navbar .navbar-nav {
+    display: flex;
+    align-items: center;
+}
+
+.navbar .nav-link {
+    display: flex;
+    align-items: center;
+}
+
 /* Login button styling */
 .navbar .btn-success {
     margin-left: var(--space-md);
@@ -273,6 +284,17 @@ p {
 .navbar .btn-success:hover {
     background: var(--secondary-color) !important;
     border-color: var(--secondary-color) !important;
+}
+
+/* Dark button styling for navbar */
+.navbar .btn-dark {
+    margin-left: var(--space-md);
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
 }
 
 /* ===== HERO SECTION ===== */
@@ -747,29 +769,80 @@ ul li::before {
 
 /* ===== FOOTER ===== */
 footer {
-    background: #1f2937 !important;
-    border-top: 1px solid var(--border-gray);
-    padding: var(--space-xl) 0;
-    color: var(--text-light);
+    background: var(--hero-bg) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: var(--space-3xl) 0 var(--space-xl);
+    color: var(--white);
     margin-top: var(--space-2xl);
 }
 
-footer h5, footer h6 {
-    color: var(--white);
-    margin-bottom: 1rem;
-    font-size: 1.2rem;
+/* Footer Headings */
+.footer-heading {
+    color: var(--white) !important;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: var(--space-lg);
+    font-family: var(--font-headers);
 }
 
-footer .text-white-50 {
-    color: rgba(255, 255, 255, 0.6) !important;
-    text-decoration: none;
-    transition: color 0.3s ease;
+/* Footer Description */
+.footer-description {
+    color: rgba(255, 255, 255, 0.7) !important;
     font-size: var(--base-font-size);
+    line-height: 1.6;
+    margin-bottom: 0;
 }
 
-footer .text-white-50:hover {
+/* Footer Lists */
+.footer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-list li {
+    margin-bottom: var(--space-sm);
+    padding: 0;
+}
+
+.footer-list li::before {
+    display: none;
+}
+
+.footer-list a {
+    color: rgba(255, 255, 255, 0.7) !important;
+    text-decoration: none;
+    font-size: var(--base-font-size);
+    transition: color 0.3s ease;
+    display: block;
+    padding: 0.25rem 0;
+}
+
+.footer-list a:hover {
     color: var(--white) !important;
     text-decoration: none;
+}
+
+/* Footer Divider */
+.footer-divider {
+    border-color: rgba(255, 255, 255, 0.2);
+    margin: var(--space-2xl) 0 var(--space-lg);
+}
+
+/* Footer Copyright */
+.footer-copyright {
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Remove FA icons from footer */
+footer .fa {
+    display: none;
+}
+
+footer ul li::before {
+    display: none;
 }
 
 /* FontAwesome Icon Styling */
