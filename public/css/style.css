@@ -304,8 +304,9 @@ p {
 }
 
 .hero-section .lead {
-    font-size: 1.4rem;
     color: var(--text-dark);
+    font-size: 1.2rem;
+    font-weight: normal;
 }
 
 .hero-section p {
@@ -905,15 +906,7 @@ section .fa {
     }
     
     .hero-section .lead {
-        font-size: 1.2rem;
-    }
-    
-    .hero-tags {
-        justify-content: center;
-    }
-    
-    .hero-tag {
-        margin-bottom: 0.5rem;
+        font-size: 1rem;
     }
     
     .pricing-card.featured {
