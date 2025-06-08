@@ -6,7 +6,7 @@
 }
 
 :root {
-    --primary-color: #1B1B20;
+    --primary-color: #002649;
     --secondary-color: #252530;
     --accent-color: #2F2F3A;
     --light-green: #F0F0F5;
@@ -209,7 +209,6 @@ p {
 /* Navbar on marketing pages with hero - more transparent */
 .marketing-page .navbar {
     background: rgb(255 255 255 / 82%) !important;
-    border: 2px solid rgb(0 72 139);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(20px);
 }
@@ -439,7 +438,6 @@ section {
 
 /* Feature Section */
 .feature-section {
-    background-color: var(--light-gray);
     padding: 7rem 0;
     width: 100%;
     margin-top: 8rem;
@@ -448,7 +446,7 @@ section {
 
 /* Full Feature Section */
 .full-feature-section {
-    background-color: var(--white);
+    background-color: var(--light-gray);
     padding: 7rem 0;
     width: 100%;
     margin-top: 8rem;
@@ -511,12 +509,25 @@ section {
     font-size: var(--base-font-size);
 }
 
+/* Feature Block */
+.feature-block {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-gray);
+    height: 100%;
+}
+
 /* Feature Items */
 .feature-item {
     display: flex;
     align-items: center;
     font-size: var(--base-font-size);
     color: var(--text-dark);
+    justify-content: flex-start;
+    text-align: left;
+    padding: 0.5rem 0;
 }
 
 .feature-item .fa {
@@ -524,6 +535,7 @@ section {
     margin-right: 0.75rem;
     color: var(--primary-color);
     flex-shrink: 0;
+    text-align: center;
 }
 
 /* ===== PRICING CARDS ===== */
