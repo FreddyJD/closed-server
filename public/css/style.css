@@ -6,17 +6,17 @@
 }
 
 :root {
-    --primary-color: #22c55e;
-    --secondary-color: #16a34a;
-    --accent-color: #15803d;
-    --light-green: #f0fdf4;
-    --border-green: #bbf7d0;
+    --primary-color: #220409;
+    --secondary-color: #3a0710;
+    --accent-color: #4a0b14;
+    --light-green: #fdf0f0;
+    --border-green: #f7bbbb;
     --text-dark: #1f2937;
     --text-light: #6b7280;
     --white: #ffffff;
     --light-gray: #f7f7f7;
     --border-gray: #e5e7eb;
-    --hero-bg: #031F22;
+    --hero-bg: #140306;
     
     /* Typography */
     --font-headers: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
