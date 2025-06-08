@@ -136,14 +136,27 @@ p {
 }
 
 .btn-outline-primary {
-    color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    color: var(--text-dark) !important;
+    border-color: var(--text-dark) !important;
+    border-width: 2px !important;
     background: transparent !important;
 }
 
 .btn-outline-primary:hover {
-    background-color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    background-color: var(--text-dark) !important;
+    border-color: var(--text-dark) !important;
+    color: white !important;
+}
+
+.btn-dark {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    color: white !important;
+}
+
+.btn-dark:hover {
+    background-color: #1a1a1a !important;
+    border-color: #1a1a1a !important;
     color: white !important;
 }
 
@@ -195,20 +208,20 @@ p {
 
 /* Navbar on marketing pages with hero - more transparent */
 .marketing-page .navbar {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(20px);
+    background: rgb(255 255 255 / 82%) !important;
+    border: 2px solid rgb(0 72 139);
+    backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(20px);
 }
 
 .marketing-page .navbar-brand,
 .marketing-page .navbar-nav .nav-link {
-    color: white !important;
+    color: var(--text-dark) !important;
 }
 
 .marketing-page .navbar-brand:hover,
 .marketing-page .navbar-nav .nav-link:hover {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: var(--text-dark) !important;
 }
 
 .navbar-brand {
@@ -269,12 +282,11 @@ p {
     /* Fallback gradient background */
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     /* Hero image with overlay */
-    background: linear-gradient(135deg, rgba(27, 27, 32, 0.9) 0%, rgba(37, 37, 48, 0.8) 100%), 
-                url('/images/hero-background.jpg') center center;
+    background: url('/images/hero-background.jpg') center center;
     background-size: cover;
     background-attachment: fixed;
     width: 100%;
-    color: var(--white);
+    color: var(--text-dark);
     position: relative;
     min-height: 100vh;
 }
@@ -288,21 +300,21 @@ p {
     font-size: clamp(2.8rem, 5vw, 3.8rem);
     font-weight: 700;
     margin-bottom: 1.5rem;
-    color: var(--white);
+    color: var(--text-dark);
 }
 
 .hero-section .lead {
     font-size: 1.4rem;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-dark);
 }
 
 .hero-section p {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-dark);
     font-size: 1.4rem;
 }
 
 .hero-section .text-muted {
-    color: rgba(255, 255, 255, 0.7) !important;
+    color: var(--text-dark) !important;
 }
 
 /* Star Rating - Close spacing */
@@ -313,6 +325,22 @@ p {
 .star-rating .fa-star {
     margin-right: 0 !important;
     color: #fbbf24 !important;
+}
+
+/* Bento Box Heading Style */
+.bento-heading {
+    color: var(--white);
+    background: #002649;
+    border-radius: 12px;
+    padding: 5px 12px;
+    border: 3px solid #a0d1ff;
+    display: inline-block;
+    transform: rotate(-1deg);
+    -webkit-transform: rotate(-1deg);
+    -moz-transform: rotate(-1deg);
+    -ms-transform: rotate(-1deg);
+    font-weight: 700;
+    font-size: inherit;
 }
 
 /* Hero Tags */
@@ -339,6 +367,51 @@ p {
 .hero-tag .fa {
     color: var(--primary-color);
     margin-right: 0.5rem;
+}
+
+/* Logo Carousel */
+.logo-carousel {
+    overflow: hidden;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo-carousel-text {
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    opacity: 0.8;
+}
+
+.logo-scroll-inner {
+    display: flex;
+    animation: scroll 20s linear infinite;
+    width: max-content;
+}
+
+.logo-scroll-inner img {
+    height: 40px;
+    margin: 0 1rem;
+    filter: grayscale(100%);
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.logo-carousel:hover .logo-scroll-inner img {
+    filter: grayscale(0%);
+    opacity: 1;
+}
+
+@keyframes scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
 }
 
 /* Hero Review */
