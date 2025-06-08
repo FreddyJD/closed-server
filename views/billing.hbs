@@ -1,0 +1,400 @@
+<!-- Billing/Pricing Page -->
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold mb-4">Choose Your Plan</h1>
+        <p class="lead">Start with a 7-day free trial to explore all features</p>
+        
+        <!-- Billing Toggle -->
+        <div class="billing-toggle mb-5">
+            <span class="toggle-label">Monthly</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="billingToggle">
+                <span class="slider"></span>
+            </label>
+            <span class="toggle-label">Yearly <span class="badge badge-success">Save 20%</span></span>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <!-- Starter Plan -->
+        <div class="col-lg-5 col-md-6 mb-4">
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Starter</h3>
+                    <div class="pricing-icon">
+                        <i class="fa fa-user fa-3x"></i>
+                    </div>
+                    <p class="pricing-description">Perfect for individuals getting started with AI sales assistance</p>
+                </div>
+                
+                <div class="pricing-features mb-4">
+                    <div class="feature-item">
+                        <i class="fa fa-microphone"></i>
+                        <span>Livestream Transcription</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-shield"></i>
+                        <span>AI Battle Cards</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-bolt"></i>
+                        <span>Instant AI Responses</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-file-text"></i>
+                        <span>Documentation Handling</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-clock-o"></i>
+                        <span>20 Hours Recording /week</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-refresh"></i>
+                        <span>Regular Updates</span>
+                    </div>
+                </div>
+
+                <div class="pricing-footer">
+                    <div class="trial-info">7-Day Free Trial</div>
+                    <div class="price-container">
+                        <span class="price">$18<span class="period">/month</span></span>
+                        <div class="billing-info">Billed monthly</div>
+                    </div>
+                    <a href="/billing/subscribe?plan=basic" class="btn btn-outline-primary btn-lg btn-block">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pro Plan -->
+        <div class="col-lg-5 col-md-6 mb-4">
+            <div class="pricing-card featured">
+                <div class="recommended-badge">RECOMMENDED</div>
+                <div class="pricing-header">
+                    <h3>Professional</h3>
+                    <div class="pricing-icon">
+                        <i class="fa fa-users fa-3x"></i>
+                    </div>
+                    <p class="pricing-description">Advanced features for teams and power users</p>
+                </div>
+
+                <div class="pricing-features mb-4">
+                    <div class="feature-item">
+                        <i class="fa fa-microphone"></i>
+                        <span>Priority Transcription</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-shield"></i>
+                        <span>Advanced AI Battle Cards</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-bolt"></i>
+                        <span>Instant AI Responses</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-cogs"></i>
+                        <span>Custom AI Training</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-database"></i>
+                        <span>Private AI Training</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-clock-o"></i>
+                        <span>Unlimited Recording</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-refresh"></i>
+                        <span>Priority Updates</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-users"></i>
+                        <span>Team Collaboration</span>
+                    </div>
+                </div>
+
+                <div class="pricing-footer">
+                    <div class="trial-info">7-Day Free Trial</div>
+                    <div class="price-container">
+                        <span class="price">$32<span class="period">/month</span></span>
+                        <div class="billing-info">Billed monthly</div>
+                    </div>
+                    <a href="/billing/subscribe?plan=pro" class="btn btn-dark btn-lg btn-block">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <p class="text-muted">All plans include 7-day free trial • No setup fees • Cancel anytime</p>
+    </div>
+</div>
+
+<style>
+/* Billing Toggle */
+.billing-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.toggle-label {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 60px;
+    height: 30px;
+    display: inline-block;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 30px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--primary-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(30px);
+}
+
+/* Pricing Cards */
+.pricing-card {
+    background: var(--white);
+    border: 2px solid var(--border-gray);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    height: 100%;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.pricing-card.featured {
+    border-color: var(--primary-color);
+    position: relative;
+}
+
+.recommended-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.pricing-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.pricing-header h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.pricing-icon, .pricing-icon-combo {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.pricing-icon-combo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.plus {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.pricing-description {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.pricing-highlight {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.highlight-title {
+    display: block;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.highlight-subtitle {
+    display: block;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.highlight-badge {
+    display: inline-block;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+/* Features */
+.pricing-features {
+    margin: 2rem 0;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-gray);
+}
+
+.feature-item:last-child {
+    border-bottom: none;
+}
+
+.feature-item i {
+    width: 20px;
+    margin-right: 0.75rem;
+    color: var(--primary-color);
+    flex-shrink: 0;
+}
+
+.feature-item span:first-of-type {
+    flex: 1;
+    color: var(--text-dark);
+}
+
+.feature-limit {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.feature-limit.fast {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.feature-limit.priority {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+/* Pricing Footer */
+.pricing-footer {
+    text-align: center;
+    margin-top: auto;
+}
+
+.trial-info {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+.price-container {
+    margin-bottom: 2rem;
+}
+
+.price {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    font-family: var(--font-headers);
+}
+
+.period {
+    font-size: 1rem;
+    color: var(--text-light);
+}
+
+.billing-info {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-top: 0.5rem;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .pricing-card {
+        margin-bottom: 2rem;
+    }
+    
+    .billing-toggle {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+</style>
+
+<script>
+// Billing toggle functionality
+document.getElementById('billingToggle').addEventListener('change', function() {
+    const monthlyElements = document.querySelectorAll('.monthly');
+    const yearlyElements = document.querySelectorAll('.yearly');
+    
+    if (this.checked) {
+        monthlyElements.forEach(el => el.style.display = 'none');
+        yearlyElements.forEach(el => el.style.display = 'inline');
+    } else {
+        monthlyElements.forEach(el => el.style.display = 'inline');
+        yearlyElements.forEach(el => el.style.display = 'none');
+    }
+});
+</script> 

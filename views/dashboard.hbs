@@ -1,21 +1,21 @@
 <div class="container">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center py-4 border-bottom">
-                <div>
-                    <h1 class="h2 mb-1">Dashboard</h1>
-                    <p class="text-muted mb-0">Welcome back, {{user.firstName}}!</p>
-                </div>
-                <div>
-                    <a href="/download" class="btn btn-success">
-                        <i class="fa fa-download me-2"></i>Download App
-                    </a>
+    {{#if subscription}}
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center py-4 border-bottom">
+                    <div>
+                        <h1 class="h2 mb-1">Dashboard</h1>
+                        <p class="text-muted mb-0">Welcome back!</p>
+                    </div>
+                    <div>
+                        <a href="/download" class="btn btn-success text-white">
+                            <i class="fa fa-download me-2"></i>Download
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    {{#if subscription}}
         <!-- Subscription Info -->
         <div class="row mt-4">
             <div class="col-12">
@@ -191,23 +191,130 @@
         </div>
 
     {{else}}
-        <!-- No Subscription -->
+        <!-- Pricing Selection -->
         <div class="row mt-4">
-            <div class="col-12">
-                <div class="card border-warning">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            <i class="fa fa-exclamation-triangle me-2"></i>Setup Required
-                        </h5>
+            <div class="col-12 text-center mb-4">
+                <h2 class="h3 mb-3">Choose Your Plan</h2>
+                <p class="text-muted">Start with a 7-day free trial to explore all features</p>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <!-- Starter Plan -->
+            <div class="col-lg-5 col-md-6 mb-4">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Starter</h3>
+                        <div class="pricing-icon">
+                            <i class="fa fa-user fa-3x"></i>
+                        </div>
+                        <p class="pricing-description">Perfect for individuals getting started with AI sales assistance</p>
                     </div>
-                    <div class="card-body text-center">
-                        <h5>No Active Subscription</h5>
-                        <p class="mb-4">Choose a plan to start using Closed AI with your team.</p>
-                        <a href="/billing" class="btn btn-success btn-lg">
-                            <i class="fa fa-credit-card me-2"></i>Choose Your Plan
+                    
+                    <div class="pricing-features mb-4">
+                        <div class="feature-item">
+                            <i class="fa fa-microphone"></i>
+                            <span>Livestream Transcription</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-shield"></i>
+                            <span>AI Battle Cards</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-bolt"></i>
+                            <span>Instant AI Responses</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-file-text"></i>
+                            <span>Documentation Handling</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-clock-o"></i>
+                            <span>20 Hours Recording /week</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-refresh"></i>
+                            <span>Regular Updates</span>
+                        </div>
+                    </div>
+
+                    <div class="pricing-footer">
+                        <div class="trial-info">7-Day Free Trial</div>
+                        <div class="price-container">
+                            <span class="price">$18<span class="period">/month</span></span>
+                            <div class="billing-info">Billed monthly</div>
+                        </div>
+                        <a href="/billing/subscribe?plan=basic" class="btn btn-outline-primary btn-lg btn-block">
+                            Get Started
                         </a>
                     </div>
                 </div>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="col-lg-5 col-md-6 mb-4">
+                <div class="pricing-card featured">
+                    <div class="recommended-badge">RECOMMENDED</div>
+                    <div class="pricing-header">
+                        <h3>Professional</h3>
+                        <div class="pricing-icon">
+                            <i class="fa fa-users fa-3x"></i>
+                        </div>
+                        <p class="pricing-description">Advanced features for teams and power users</p>
+                    </div>
+
+                    <div class="pricing-features mb-4">
+                        <div class="feature-item">
+                            <i class="fa fa-microphone"></i>
+                            <span>Priority Transcription</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-shield"></i>
+                            <span>Advanced AI Battle Cards</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-bolt"></i>
+                            <span>Instant AI Responses</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-cogs"></i>
+                            <span>Custom AI Training</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-database"></i>
+                            <span>Private AI Training</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-clock-o"></i>
+                            <span>Unlimited Recording</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-refresh"></i>
+                            <span>Priority Updates</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fa fa-users"></i>
+                            <span>Team Collaboration</span>
+                        </div>
+                    </div>
+
+                    <div class="pricing-footer">
+                        <div class="trial-info">7-Day Free Trial</div>
+                        <div class="price-container">
+                            <span class="price">$32<span class="period">/month</span></span>
+                            <div class="billing-info">Billed monthly</div>
+                        </div>
+                        <a href="/billing/subscribe?plan=pro" class="btn btn-dark btn-lg btn-block">
+                            Get Started
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <p class="text-muted">All plans include 7-day free trial • No setup fees • Cancel anytime</p>
             </div>
         </div>
     {{/if}}
