@@ -1,0 +1,178 @@
+<div class="hero">
+    <h1>🏢 Enterprise Solutions</h1>
+    <p>Scale Battle Cards across your entire organization with enterprise-grade features</p>
+</div>
+
+<section>
+    <h2>Enterprise-Grade AI Sales Assistance</h2>
+    <p>Deploy Battle Cards at scale with advanced security, compliance, and management features designed for large organizations.</p>
+    
+    <div class="bento-grid grid-2">
+        <div class="bento-card">
+            <h3>✅ Core Battle Cards Features</h3>
+            <ul>
+                <li>Real-time AI battle cards during sales calls</li>
+                <li>Drag-to-generate manual cards</li>
+                <li>Desktop app with call overlay</li>
+                <li>Claude AI integration</li>
+                <li>Advanced transcription with speaker detection</li>
+                <li>Call analytics and performance tracking</li>
+            </ul>
+        </div>
+        
+        <div class="bento-card featured">
+            <h3>🏢 Enterprise Add-ons</h3>
+            <ul>
+                <li><strong>Single Sign-On (SSO)</strong> - SAML/OIDC integration</li>
+                <li><strong>Directory Sync</strong> - Automatic user provisioning</li>
+                <li><strong>Audit Logs</strong> - Compliance and security tracking</li>
+                <li><strong>Team Management</strong> - Role-based access control</li>
+                <li><strong>Custom Integrations</strong> - API access for CRM sync</li>
+                <li><strong>24/7 Support</strong> - Dedicated account management</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #333;">
+        <h3>💰 Enterprise Pricing Calculator</h3>
+        <p>Get an instant quote for your team size and required features.</p>
+        
+        <form id="pricing-calculator" style="margin: 20px 0;">
+            <div style="margin: 10px 0;">
+                <label><strong>Number of Seats:</strong></label>
+                <input type="number" id="seats" min="5" value="10" style="margin-left: 10px; padding: 5px;">
+            </div>
+            
+            <div style="margin: 10px 0;">
+                <label><strong>Plan:</strong></label>
+                <select id="plan" style="margin-left: 10px; padding: 5px;">
+                    <option value="basic">Basic ($5/seat/month)</option>
+                    <option value="pro">Pro ($25/seat/month)</option>
+                </select>
+            </div>
+            
+            <div style="margin: 10px 0;">
+                <label><strong>Enterprise Features:</strong></label>
+                <div style="margin-left: 20px;">
+                    <label><input type="checkbox" id="sso" checked> Single Sign-On (${{workos_pricing.sso}}/month)</label><br>
+                    <label><input type="checkbox" id="directorySync" checked> Directory Sync (${{workos_pricing.directorySync}}/month)</label><br>
+                    <label><input type="checkbox" id="authorization"> Authorization (Free)</label><br>
+                    <label><input type="checkbox" id="auditLogs" checked> Audit Logs (${{workos_pricing.auditLogs}}/month)</label><br>
+                </div>
+            </div>
+            
+            <button type="button" onclick="calculatePricing()" style="padding: 10px 20px; background: #333; color: white; border: none;">
+                Calculate Pricing
+            </button>
+        </form>
+        
+        <div id="pricing-result" style="display: none; margin: 20px 0; padding: 20px; background: #e8f5e8; border: 1px solid #4caf50;">
+            <h4>📊 Monthly Pricing Breakdown</h4>
+            <div id="pricing-details"></div>
+            <div style="margin-top: 20px;">
+                <a href="/enterprise/signup" style="padding: 15px 30px; background: #4caf50; color: white; text-decoration: none; font-weight: bold;">
+                    Get Started →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <h3>🚀 Why Choose Enterprise?</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div>
+                <h4>🔒 Security & Compliance</h4>
+                <ul>
+                    <li>Enterprise SSO with your identity provider</li>
+                    <li>Automatic user provisioning/deprovisioning</li>
+                    <li>Audit logs for compliance</li>
+                    <li>SOC2 Type II certified infrastructure</li>
+                </ul>
+            </div>
+            <div>
+                <h4>👥 Team Management</h4>
+                <ul>
+                    <li>Centralized license management</li>
+                    <li>Role-based access control</li>
+                    <li>Usage analytics and reporting</li>
+                    <li>Bulk onboarding tools</li>
+                </ul>
+            </div>
+            <div>
+                <h4>💬 Support & Success</h4>
+                <ul>
+                    <li>Dedicated customer success manager</li>
+                    <li>Priority support (24/7)</li>
+                    <li>Custom training and onboarding</li>
+                    <li>Implementation assistance</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin: 30px 0; text-align: center; padding: 30px; background: #f0f0f0;">
+        <h3>Ready to Transform Your Sales Team?</h3>
+        <p>Join hundreds of companies using Battle Cards to close more deals.</p>
+        <a href="/enterprise/signup" style="padding: 15px 40px; background: #333; color: white; text-decoration: none; font-size: 18px; font-weight: bold;">
+            Start Enterprise Trial →
+        </a>
+        <p style="margin-top: 10px; font-size: 14px; color: #666;">
+            Custom pricing • 30-day trial • Implementation included
+        </p>
+    </div>
+</section>
+
+<script>
+function calculatePricing() {
+    const seats = document.getElementById('seats').value;
+    const plan = document.getElementById('plan').value;
+    const features = {
+        sso: document.getElementById('sso').checked,
+        directorySync: document.getElementById('directorySync').checked,
+        authorization: document.getElementById('authorization').checked,
+        auditLogs: document.getElementById('auditLogs').checked
+    };
+    
+    fetch('/enterprise/calculate-pricing', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ seats, plan, features })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const pricing = data.pricing;
+            document.getElementById('pricing-details').innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr><td><strong>Battle Cards Seats:</strong></td><td>$${pricing.seatPrice} × ${pricing.seats} seats = $${pricing.seatCost}</td></tr>
+                    ${pricing.workosFeatures.sso > 0 ? `<tr><td><strong>Single Sign-On:</strong></td><td>$${pricing.workosFeatures.sso}</td></tr>` : ''}
+                    ${pricing.workosFeatures.directorySync > 0 ? `<tr><td><strong>Directory Sync:</strong></td><td>$${pricing.workosFeatures.directorySync}</td></tr>` : ''}
+                    ${pricing.workosFeatures.authorization > 0 ? `<tr><td><strong>Authorization:</strong></td><td>$${pricing.workosFeatures.authorization}</td></tr>` : ''}
+                    ${pricing.workosFeatures.auditLogs > 0 ? `<tr><td><strong>Audit Logs:</strong></td><td>$${pricing.workosFeatures.auditLogs}</td></tr>` : ''}
+                    <tr><td><strong>WorkOS Features Total:</strong></td><td>$${pricing.workosFeatures.total}</td></tr>
+                    <tr><td><strong>Support & Management (30%):</strong></td><td>$${pricing.supportFee.toFixed(2)}</td></tr>
+                    <tr style="border-top: 2px solid #333; font-size: 18px; font-weight: bold;"><td><strong>Total Monthly:</strong></td><td><strong>$${pricing.total.toFixed(2)}</strong></td></tr>
+                </table>
+                <p style="margin-top: 15px; font-size: 14px; color: #666;">
+                    * Includes {{support_markup_percent}}% markup for dedicated support, account management, and premium features
+                </p>
+            `;
+            document.getElementById('pricing-result').style.display = 'block';
+        } else {
+            alert('Error calculating pricing: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Pricing calculation error:', error);
+        alert('Error calculating pricing. Please try again.');
+    });
+}
+
+// Calculate pricing on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculatePricing();
+});
+</script> 

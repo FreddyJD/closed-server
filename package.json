@@ -1,0 +1,41 @@
+{
+  "name": "battlecards-server",
+  "version": "1.0.0",
+  "description": "Battle Cards AI-powered sales assistance server",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "migrate": "knex migrate:latest",
+    "migrate:rollback": "knex migrate:rollback",
+    "migrate:status": "knex migrate:status",
+    "db:setup": "knex migrate:latest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.3",
+    "@deepgram/sdk": "^4.2.0",
+    "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
+    "@workos-inc/node": "^7.54.0",
+    "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-handlebars": "^8.0.1",
+    "express-session": "^1.18.1",
+    "knex": "^3.1.0",
+    "pg": "^8.16.0",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "battlecards",
+    "ai",
+    "sales",
+    "claude"
+  ],
+  "author": "Battle Cards Team",
+  "license": "MIT"
+}

@@ -1,0 +1,73 @@
+<div class="hero text-center py-5">
+    <h1>Welcome to Battle Cards</h1>
+    <p class="lead">AI-powered sales assistance that transforms your calls into closed deals</p>
+</div>
+
+{{#if error}}
+    <div class="alert alert-danger">
+        {{error}}
+    </div>
+{{/if}}
+
+<section class="py-5">
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card border-green h-100">
+                <div class="card-body text-center">
+                    <h2>🔐 Secure Login</h2>
+                    <p class="mb-4">Sign in to access your dashboard, manage team licenses, and download the desktop app.</p>
+                    <a href="/auth/workos" class="btn btn-primary btn-lg mb-3">Sign in with WorkOS</a>
+                    <p class="text-muted small">
+                        Powered by enterprise-grade WorkOS authentication
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3>🆕 New to Battle Cards?</h3>
+                    <p>Start your journey with AI-powered sales assistance today!</p>
+                    <ul class="list-unstyled">
+                        <li>🎯 7-day free trial on any plan</li>
+                        <li>💳 No credit card required</li>
+                        <li>🚀 Full access to all features</li>
+                        <li>❌ Cancel anytime</li>
+                    </ul>
+                    <div class="mt-4">
+                        <a href="/auth/workos" class="btn btn-outline-primary btn-block">Start Free Trial</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-light">
+    <div class="text-center mb-5">
+        <h2>Why Choose Battle Cards?</h2>
+    </div>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="feature-card">
+                <h3>🎤 Real-Time Intelligence</h3>
+                <p>AI analyzes your sales conversations in real-time and provides instant battle cards for objections.</p>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="feature-card">
+                <h3>🧠 Claude AI Powered</h3>
+                <p>Leverages advanced AI to understand context and suggest the perfect responses for any situation.</p>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="feature-card">
+                <h3>📈 Close More Deals</h3>
+                <p>Never miss an opportunity with AI-generated responses that help you handle any objection with confidence.</p>
+            </div>
+        </div>
+    </div>
+</section> 
