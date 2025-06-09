@@ -71,7 +71,7 @@ const billingRoutes = require('./routes/billing');
 const desktopRoutes = require('./routes/desktop');
 
 // Use route modules
-app.use('/auth', authRoutes);         // Auth routes (/auth/workos, /auth/callback, /auth/logout)
+app.use('/auth', authRoutes);         // Auth routes (/auth/login, /auth/callback, /auth/logout)
 app.use('/', webRoutes);              // Web UI routes (/, /login, /dashboard)
 app.use('/', billingRoutes);          // Billing routes (/subscribe, /dashboard/*, /webhooks/lemonsqueezy)
 app.use('/api/desktop', desktopRoutes); // Desktop API routes (/api/desktop/*)

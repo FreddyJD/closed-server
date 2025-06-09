@@ -5,8 +5,8 @@ const workosService = require('../services/workos');
 const { createTrialSubscription } = require('../utils/license');
 const crypto = require('crypto');
 
-// WorkOS authentication
-router.get('/workos', async (req, res) => {
+// WorkOS authentication (login)
+router.get('/login', async (req, res) => {
     try {
         // Check if WorkOS is configured
         if (!workosService.isConfigured()) {
@@ -14,12 +14,12 @@ router.get('/workos', async (req, res) => {
             return res.send(workosService.getConfigErrorMessage());
         }
         
-        const authorizationUrl = workosService.getAuthorizationUrl();
+        const authorizationUrl = workosService.getAuthorizationUrl('login');
         res.redirect(authorizationUrl);
     } catch (error) {
         console.error('WorkOS auth error:', error);
         req.session.error = 'Authentication failed';
-        res.redirect('/login');
+        res.redirect('/');
     }
 });
 
@@ -111,7 +111,7 @@ router.get('/callback', async (req, res) => {
     } catch (error) {
         console.error('WorkOS callback error:', error);
         req.session.error = 'Authentication failed';
-        res.redirect('/login');
+        res.redirect('/');
     }
 });
 
@@ -370,8 +370,53 @@ router.post('/api/desktop/validate-access', async (req, res) => {
 
 // Logout
 router.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/');
+    const userEmail = req.session.user?.email;
+    
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Session destroy error:', err);
+            return res.redirect('/dashboard?error=logout_failed');
+        }
+        
+        // Clear the session cookie
+        res.clearCookie('connect.sid');
+        
+        // Log the logout
+        if (userEmail) {
+            console.log(`👋 User logged out: ${userEmail}`);
+        }
+        
+        // Redirect to home with success message
+        res.redirect('/?message=logged_out');
+    });
+});
+
+// POST logout for AJAX requests
+router.post('/logout', (req, res) => {
+    const userEmail = req.session.user?.email;
+    
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Session destroy error:', err);
+            return res.status(500).json({
+                success: false,
+                error: 'Logout failed'
+            });
+        }
+        
+        // Clear the session cookie
+        res.clearCookie('connect.sid');
+        
+        // Log the logout
+        if (userEmail) {
+            console.log(`👋 User logged out via API: ${userEmail}`);
+        }
+        
+        res.json({
+            success: true,
+            message: 'Successfully logged out'
+        });
+    });
 });
 
 module.exports = router; 

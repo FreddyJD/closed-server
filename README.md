@@ -112,7 +112,7 @@ The application will be available at http://localhost:4000
 - `GET /login` - Login page
 - `GET /dashboard` - User dashboard (requires auth)
 - `GET /subscribe?plan=basic|pro` - Subscribe to plan (requires auth)
-- `POST /auth/workos` - WorkOS authentication
+- `POST /auth/login` - WorkOS authentication
 - `GET /auth/callback` - WorkOS callback
 - `GET /auth/logout` - Logout
 

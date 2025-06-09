@@ -239,35 +239,24 @@ router.post('/dashboard/cancel-subscription', requireAuth, async (req, res) => {
 router.get('/payment/success', async (req, res) => {
     try {
         const { plan } = req.query;
-        res.send(`
-            <h1>🎉 Payment Successful!</h1>
-            <p>Thank you for subscribing to the ${plan} plan!</p>
-            <p>We're processing your subscription and you'll receive an email confirmation shortly.</p>
-            <p><strong>What happens next:</strong></p>
-            <ul>
-                <li>✅ Your subscription is being activated</li>
-                <li>📧 You'll receive email confirmation</li>
-                <li>👥 Add team members in your dashboard</li>
-            </ul>
-            <p><a href="/dashboard">Go to Dashboard →</a></p>
-        `);
+        res.render('payment-success', {
+            title: 'Payment Successful',
+            plan: plan || 'your selected'
+        });
     } catch (error) {
         console.error('Payment success error:', error);
-        res.send(`
-            <h1>Payment Successful</h1>
-            <p>Thank you for your subscription!</p>
-            <p><a href="/dashboard">Go to Dashboard →</a></p>
-        `);
+        res.render('payment-success', {
+            title: 'Payment Successful',
+            plan: 'your selected'
+        });
     }
 });
 
 // Payment cancelled page
 router.get('/payment/cancelled', (req, res) => {
-    res.send(`
-        <h1>Payment Cancelled</h1>
-        <p>No worries! You can try again anytime.</p>
-        <p><a href="/dashboard">← Back to Dashboard</a></p>
-    `);
+    res.render('payment-cancelled', {
+        title: 'Payment Cancelled'
+    });
 });
 
 // Lemon Squeezy webhook

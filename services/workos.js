@@ -9,16 +9,23 @@ function isConfigured() {
 }
 
 // Get authorization URL for WorkOS
-function getAuthorizationUrl() {
+function getAuthorizationUrl(state = null) {
     if (!isConfigured()) {
         throw new Error('WorkOS not configured');
     }
     
-    return workos.userManagement.getAuthorizationUrl({
+    const authParams = {
         provider: 'authkit',
         clientId: config.workos.clientId,
         redirectUri: config.workos.redirectUri
-    });
+    };
+    
+    // Add state parameter if provided
+    if (state) {
+        authParams.state = state;
+    }
+    
+    return workos.userManagement.getAuthorizationUrl(authParams);
 }
 
 // Authenticate user with authorization code
