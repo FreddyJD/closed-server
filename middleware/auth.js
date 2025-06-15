@@ -16,6 +16,8 @@ async function requireAuth(req, res, next) {
         }
         
         // Get user and tenant details
+        console.log('🔍 Looking up user:', req.session.user.id);
+        
         const user = await db('users')
             .join('tenants', 'users.tenant_id', 'tenants.id')
             .where('users.id', req.session.user.id)
@@ -36,7 +38,10 @@ async function requireAuth(req, res, next) {
             )
             .first();
         
+        console.log('👤 User lookup result:', user ? { email: user.email, tenant_status: user.tenant_status } : 'NOT FOUND');
+        
         if (!user) {
+            console.log('❌ User not found in database, clearing session');
             // User not found, clear session
             req.session.destroy();
             return res.redirect('/login');
@@ -74,6 +79,7 @@ async function requireAuth(req, res, next) {
         res.locals.user = req.user;
         res.locals.tenant = req.tenant;
         
+        console.log('✅ Auth middleware success for:', req.user.email);
         next();
         
     } catch (error) {
