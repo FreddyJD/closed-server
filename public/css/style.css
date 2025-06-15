@@ -828,6 +828,39 @@ ul li::before {
     font-weight: bold;
 }
 
+/* Remove checkmarks when FontAwesome icons are present */
+ul li:has(.fa)::before,
+.list-unstyled li::before,
+ul.list-unstyled li::before {
+    display: none;
+}
+
+/* More specific override for any ul with class containing 'unstyled' */
+ul[class*="unstyled"] li::before {
+    display: none;
+}
+
+/* Better spacing for lists with FontAwesome icons */
+.list-unstyled li {
+    padding-left: 0;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.list-unstyled li .fa {
+    margin-right: 0.75rem;
+    color: var(--primary-color);
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+}
+
+/* Success colored FontAwesome icons */
+.list-unstyled li .fa.text-success {
+    color: #28a745 !important;
+}
+
 /* ===== UTILITIES ===== */
 .text-green {
     color: var(--primary-color) !important;

@@ -4,44 +4,45 @@
             <div class="card">
                 <div class="card-body p-5">
                     <div class="text-center mb-4">
-                        <img src="/images/logo-fill.png" alt="Closed AI Logo" class="img-fluid mb-3" style="max-width: 60px;">
+                        <img src="/images/logo-fill.png" alt="Closed AI Logo" class="img-fluid mb-3"
+                            style="max-width: 60px;">
                         <h2 class="h4 mb-1">Welcome Back</h2>
                         <p class="text-muted">Sign in to your Closed AI account</p>
                     </div>
 
                     {{#if error}}
-                        <div class="alert alert-danger">
-                            {{error}}
-                        </div>
+                    <div class="alert alert-danger">
+                        {{error}}
+                    </div>
                     {{/if}}
 
                     <form method="POST" action="/auth/login">
                         {{#if isElectron}}
-                            <input type="hidden" name="isElectron" value="true">
+                        <input type="hidden" name="isElectron" value="true">
                         {{/if}}
-                        
+
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control" name="email" id="email" required 
-                                   placeholder="your@email.com" autocomplete="email">
+                            <input type="email" class="form-control" name="email" id="email" required
+                                placeholder="your@email.com" autocomplete="email">
                         </div>
 
                         <div class="mb-3">
                             <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" name="password" id="password" required 
-                                   placeholder="Enter your password" autocomplete="current-password">
+                            <input type="password" class="form-control" name="password" id="password" required
+                                placeholder="Enter your password" autocomplete="current-password">
                         </div>
 
-                        <div class="d-grid mb-3">
+                        <div class="d-flex justify-content-end mb-3">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                Sign In
+                                Login
                             </button>
                         </div>
-
                         <div class="text-center">
                             <p class="text-muted mb-0">
-                                Don't have an account? 
-                                <a href="/register{{#if isElectron}}?isElectron=true{{/if}}" class="text-decoration-none">
+                                Don't have an account?
+                                <a href="/register{{#if isElectron}}?isElectron=true{{/if}}"
+                                    class="text-decoration-none">
                                     Create one here
                                 </a>
                             </p>
@@ -49,41 +50,40 @@
                     </form>
                 </div>
             </div>
-            
+
             {{#if isElectron}}
-                <div class="text-center mt-3">
-                    <small class="text-muted">
-                        <i class="fa fa-info-circle me-1"></i>
-                        Complete your login and you'll be redirected back to the desktop app
-                    </small>
-                </div>
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <i class="fa fa-info-circle me-1"></i>
+                    Complete your login and you'll be redirected back to the desktop app
+                </small>
+            </div>
             {{/if}}
         </div>
     </div>
 </div>
 
 <style>
+    .form-control {
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e9ecef;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
 
-.form-control {
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-    border: 2px solid #e9ecef;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
 
-.form-control:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
+    .btn-primary {
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+    }
 
-.btn-primary {
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-}
-
-.alert {
-    border-radius: 0.5rem;
-    border: none;
-}
-</style> 
+    .alert {
+        border-radius: 0.5rem;
+        border: none;
+    }
+</style>
