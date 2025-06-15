@@ -48,6 +48,21 @@ app.set('views', __dirname + '/views');
 // Middleware
 app.use(cors());
 
+// Force HTTPS redirect middleware
+app.use((req, res, next) => {
+    // Skip HTTPS redirect in development
+    if (process.env.NODE_ENV !== 'production') {
+        return next();
+    }
+    
+    // Check if request is secure (HTTPS)
+    if (req.header('x-forwarded-proto') !== 'https') {
+        res.redirect(`https://${req.header('host')}${req.url}`);
+    } else {
+        next();
+    }
+});
+
 // Static files
 app.use(express.static('public'));
 
