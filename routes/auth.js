@@ -10,7 +10,20 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password, isElectron } = req.body;
         
+        console.log('🔐 Login attempt:', { 
+            email: email?.toLowerCase(), 
+            hasPassword: !!password,
+            isElectron,
+            sessionExists: !!req.session,
+            headers: {
+                'user-agent': req.headers['user-agent'],
+                'x-forwarded-proto': req.headers['x-forwarded-proto'],
+                'host': req.headers.host
+            }
+        });
+        
         if (!email || !password) {
+            console.log('❌ Missing email or password');
             req.session.error = 'Email and password are required';
             return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
         }
@@ -27,9 +40,17 @@ router.post('/login', async (req, res) => {
             .first();
         
         if (!user) {
+            console.log('❌ User not found:', email?.toLowerCase());
             req.session.error = 'Invalid email or password';
             return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
         }
+        
+        console.log('✅ User found:', { 
+            email: user.email, 
+            status: user.status, 
+            tenant_status: user.tenant_status,
+            isInvited: user.first_name === 'Invited' && user.last_name === 'User'
+        });
         
         // Check if this is an invited user who needs to set their password
         const isInvitedUser = user.first_name === 'Invited' && user.last_name === 'User';
