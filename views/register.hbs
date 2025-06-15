@@ -5,8 +5,8 @@
                 <div class="card-body p-5">
                     <div class="text-center mb-4">
                         <img src="/images/logo-fill.png" alt="Closed AI Logo" class="img-fluid mb-3" style="max-width: 60px;">
-                        <h2 class="h4 mb-1">Welcome Back</h2>
-                        <p class="text-muted">Sign in to your Closed AI account</p>
+                        <h2 class="h4 mb-1">Create Your Account</h2>
+                        <p class="text-muted">Start your 7-day free trial today</p>
                     </div>
 
                     {{#if error}}
@@ -15,11 +15,24 @@
                         </div>
                     {{/if}}
 
-                    <form method="POST" action="/auth/login">
+                    <form method="POST" action="/auth/register">
                         {{#if isElectron}}
                             <input type="hidden" name="isElectron" value="true">
                         {{/if}}
                         
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="firstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" name="firstName" id="firstName" required 
+                                       placeholder="John" autocomplete="given-name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="lastName" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" name="lastName" id="lastName" required 
+                                       placeholder="Doe" autocomplete="family-name">
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
                             <input type="email" class="form-control" name="email" id="email" required 
@@ -29,24 +42,38 @@
                         <div class="mb-3">
                             <label for="password" class="form-label">Password</label>
                             <input type="password" class="form-control" name="password" id="password" required 
-                                   placeholder="Enter your password" autocomplete="current-password">
+                                   placeholder="Create a strong password" autocomplete="new-password" minlength="6">
+                            <div class="form-text">Password must be at least 6 characters long</div>
                         </div>
 
                         <div class="d-grid mb-3">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                Sign In
+                                Create Account & Start Trial
                             </button>
                         </div>
 
                         <div class="text-center">
                             <p class="text-muted mb-0">
-                                Don't have an account? 
-                                <a href="/register{{#if isElectron}}?isElectron=true{{/if}}" class="text-decoration-none">
-                                    Create one here
+                                Already have an account? 
+                                <a href="/login{{#if isElectron}}?isElectron=true{{/if}}" class="text-decoration-none">
+                                    Sign in here
                                 </a>
                             </p>
                         </div>
                     </form>
+
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6 class="text-success mb-2">
+                            <i class="fa fa-gift me-2"></i>What you get with your free trial:
+                        </h6>
+                        <ul class="list-unstyled mb-0 small">
+                            <li><i class="fa fa-check text-success me-2"></i>7 days full access to all features</li>
+                            <li><i class="fa fa-check text-success me-2"></i>AI-powered battle cards</li>
+                            <li><i class="fa fa-check text-success me-2"></i>Real-time transcription</li>
+                            <li><i class="fa fa-check text-success me-2"></i>Team collaboration</li>
+                            <li><i class="fa fa-check text-success me-2"></i>No credit card required</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
             
@@ -54,7 +81,7 @@
                 <div class="text-center mt-3">
                     <small class="text-muted">
                         <i class="fa fa-info-circle me-1"></i>
-                        Complete your login and you'll be redirected back to the desktop app
+                        Complete your registration and you'll be redirected back to the desktop app
                     </small>
                 </div>
             {{/if}}
@@ -89,5 +116,9 @@
 .alert {
     border-radius: 0.5rem;
     border: none;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
 }
 </style> 

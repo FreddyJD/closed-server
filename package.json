@@ -14,8 +14,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",
     "@deepgram/sdk": "^4.2.0",
-    "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
     "@workos-inc/node": "^7.54.0",
+    "bcrypt": "^6.0.0",
     "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -25,6 +25,7 @@
     "express-session": "^1.18.1",
     "knex": "^3.1.0",
     "pg": "^8.16.0",
+    "stripe": "^18.2.1",
     "ws": "^8.18.2"
   },
   "devDependencies": {

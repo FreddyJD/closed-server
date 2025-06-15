@@ -14,8 +14,8 @@ router.get('/', async (req, res) => {
         
         // Check service configuration status for development
         const serviceStatus = {
-            workos: !!(config.workos.clientId && config.workos.apiKey),
-            lemonSqueezy: !!(config.lemonSqueezy.apiKey && config.lemonSqueezy.storeId),
+            authentication: true, // Our custom auth system
+            stripe: !!(config.stripe?.secretKey && config.stripe?.publishableKey),
             claude: !!config.claude.apiKey,
             database: false // Will be true if we get here without errors
         };
@@ -37,9 +37,23 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Login page
+// Show login page
 router.get('/login', (req, res) => {
-    res.render('login', { error: req.session.error });
+    const { isElectron } = req.query;
+    res.render('login', { 
+        error: req.session.error,
+        isElectron: isElectron === 'true'
+    });
+    delete req.session.error;
+});
+
+// Show register page
+router.get('/register', (req, res) => {
+    const { isElectron } = req.query;
+    res.render('register', { 
+        error: req.session.error,
+        isElectron: isElectron === 'true'
+    });
     delete req.session.error;
 });
 
@@ -47,35 +61,44 @@ router.get('/login', (req, res) => {
 router.get('/dashboard', requireAuth, async (req, res) => {
     try {
         const user = req.user;
+        const tenant = req.tenant;
         
-        // Get subscription
-        const subscription = await db('subscriptions')
-            .where('user_id', user.id)
-            .where('status', 'active')
-            .first();
-        
-        // Get team members for this subscription
-        let teamMembers = [];
-        if (subscription) {
-            teamMembers = await db('team_members')
-                .where('subscription_id', subscription.id)
+        // Get all users in this tenant (for admin view)
+        let tenantUsers = [];
+        if (user.role === 'admin') {
+            tenantUsers = await db('users')
+                .where('tenant_id', tenant.id)
+                .where('id', '!=', user.id) // Exclude current user
                 .orderBy('created_at', 'desc');
         }
         
-        // Check if trial is active
-        const trial_active = user.trial_ends_at && new Date(user.trial_ends_at) > new Date() && !user.trial_used;
+        // Check if this is a new registration (show welcome message)
+        const isNewRegistration = req.query.welcome === 'true';
+        
+        // Simple status check
+        const isActive = tenant.status === 'active';
         
         res.render('dashboard', {
             user,
-            subscription,
-            teamMembers,
-            trial_active,
+            tenant,
+            tenantUsers,
+            isNewRegistration,
+            isActive,
             isDashboard: true
         });
     } catch (error) {
         console.error('Dashboard error:', error);
         res.status(500).send('Server error');
     }
+});
+
+// Billing page
+router.get('/billing', requireAuth, (req, res) => {
+    res.render('billing', {
+        user: req.user,
+        tenant: req.tenant,
+        title: 'Choose Your Plan'
+    });
 });
 
 module.exports = router; 

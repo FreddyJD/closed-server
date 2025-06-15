@@ -2,54 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const lemonSqueezyService = require('../services/lemonSqueezy');
+const stripeService = require('../services/stripe');
+const bcrypt = require('bcrypt');
 
-// Utility function to deactivate team members when subscription becomes inactive
-async function deactivateTeamMembersForInactiveSubscription(subscriptionId) {
-    try {
-        console.log('🚫 Deactivating team members for inactive subscription:', subscriptionId);
-        
-        // Update all team members to 'suspended' status
-        const updatedMembers = await db('team_members')
-            .where('subscription_id', subscriptionId)
-            .update({ 
-                status: 'suspended',
-                suspended_at: new Date()
-            })
-            .returning(['email', 'status']);
-        
-        console.log('✅ Deactivated team members:', updatedMembers);
-        return updatedMembers;
-    } catch (error) {
-        console.error('❌ Error deactivating team members:', error);
-        throw error;
-    }
-}
-
-// Utility function to reactivate team members when subscription becomes active
-async function reactivateTeamMembersForActiveSubscription(subscriptionId) {
-    try {
-        console.log('✅ Reactivating team members for active subscription:', subscriptionId);
-        
-        // Update suspended team members back to 'active' status
-        const updatedMembers = await db('team_members')
-            .where('subscription_id', subscriptionId)
-            .where('status', 'suspended')
-            .update({ 
-                status: 'active',
-                suspended_at: null
-            })
-            .returning(['email', 'status']);
-        
-        console.log('✅ Reactivated team members:', updatedMembers);
-        return updatedMembers;
-    } catch (error) {
-        console.error('❌ Error reactivating team members:', error);
-        throw error;
-    }
-}
-
-// Subscribe route
+// Subscribe route - creates Stripe checkout session
 router.get('/subscribe', requireAuth, async (req, res) => {
     try {
         const { plan } = req.query;
@@ -58,32 +14,34 @@ router.get('/subscribe', requireAuth, async (req, res) => {
             return res.redirect('/dashboard');
         }
         
-        // Check if Lemon Squeezy is configured
-        if (!lemonSqueezyService.isConfigured()) {
-            console.error('Lemon Squeezy not configured');
-            return res.send(lemonSqueezyService.getConfigErrorMessage());
+        // Check if Stripe is configured
+        if (!stripeService.isConfigured()) {
+            console.error('Stripe not configured');
+            return res.send(stripeService.getConfigErrorMessage());
         }
         
         const user = req.user;
+        const tenant = req.tenant;
         
-        if (!lemonSqueezyService.isPlanConfigured(plan)) {
-            console.error(`Variant ID not configured for ${plan} plan`);
-            return res.send(lemonSqueezyService.getPlanConfigErrorMessage(plan));
-        }
-
-        // Create Lemon Squeezy checkout
-        const checkout = await lemonSqueezyService.createCheckoutForPlan(plan, user);
+        // Update tenant plan
+        await db('tenants')
+            .where('id', tenant.id)
+            .update({ 
+                plan: plan,
+                updated_at: new Date()
+            });
         
-        // Extract the checkout URL from the response
-        const checkoutUrl = checkout?.data?.data?.attributes?.url;
+        // Create Stripe checkout session
+        const session = await stripeService.createCheckoutSession(
+            plan,
+            tenant,
+            user,
+            `${req.protocol}://${req.get('host')}/billing/success?plan=${plan}`,
+            `${req.protocol}://${req.get('host')}/billing/cancelled`
+        );
         
-        if (checkoutUrl) {
-            console.log(`✅ Redirecting to checkout: ${checkoutUrl}`);
-            res.redirect(checkoutUrl);
-        } else {
-            console.error('❌ No checkout URL found in response:', JSON.stringify(checkout, null, 2));
-            throw new Error('Failed to create checkout - no URL returned');
-        }
+        console.log(`✅ Redirecting to Stripe checkout: ${session.url}`);
+        res.redirect(session.url);
         
     } catch (error) {
         console.error('Subscribe error:', error);
@@ -91,141 +49,192 @@ router.get('/subscribe', requireAuth, async (req, res) => {
     }
 });
 
-// Add team member (simple email-based)
-router.post('/dashboard/add-team-member', requireAuth, async (req, res) => {
+// Add user to tenant (admin only)
+router.post('/add-user', requireAuth, async (req, res) => {
     try {
         const { email } = req.body;
         const user = req.user;
+        const tenant = req.tenant;
         
-        console.log('👥 Adding team member:', email, 'for user:', user.id);
-        
-        const subscription = await db('subscriptions')
-            .where('user_id', user.id)
-            .where('status', 'active')
-            .first();
-        
-        if (!subscription) {
-            console.log('❌ No active subscription found');
-            return res.redirect('/dashboard?error=no_subscription');
+        // Only admins can add users
+        if (user.role !== 'admin') {
+            return res.redirect('/dashboard?error=not_authorized');
         }
         
-        // Count current team members
-        const currentMembers = await db('team_members')
-            .where('subscription_id', subscription.id)
+        console.log('👥 Adding user:', email, 'to tenant:', tenant.id);
+        
+        // Check if tenant has active subscription
+        if (tenant.status !== 'active') {
+            console.log('❌ Tenant subscription not active:', tenant.status);
+            return res.redirect('/dashboard?error=subscription_required');
+        }
+        
+        // Count current users in tenant
+        const currentUsers = await db('users')
+            .where('tenant_id', tenant.id)
             .count('* as count')
             .first();
         
-        const currentMemberCount = parseInt(currentMembers.count);
-        const newMemberCount = currentMemberCount + 1;
+        const currentUserCount = parseInt(currentUsers.count);
+        const newUserCount = currentUserCount + 1;
         
-        // If adding member exceeds seat limit, we need to upgrade the subscription
-        if (newMemberCount > subscription.seats) {
-            console.log('💰 Upgrading subscription seats from', subscription.seats, 'to', newMemberCount);
+        // If adding user exceeds seat limit, we need to upgrade the subscription
+        if (newUserCount > tenant.seats) {
+            console.log('💰 Upgrading tenant seats from', tenant.seats, 'to', newUserCount);
             
-            // Update Lemon Squeezy subscription quantity if we have a subscription ID
-            if (subscription.lemon_squeezy_subscription_id) {
+            // Update Stripe subscription quantity if we have a subscription ID
+            if (tenant.stripe_subscription_id) {
                 try {
-                    await lemonSqueezyService.updateSubscriptionQuantity(
-                        subscription.lemon_squeezy_subscription_id, 
-                        newMemberCount
+                    await stripeService.updateSubscriptionQuantity(
+                        tenant.stripe_subscription_id, 
+                        newUserCount
                     );
-                    console.log('✅ Lemon Squeezy subscription upgraded');
-                } catch (lemonSqueezyError) {
-                    console.error('❌ Failed to upgrade Lemon Squeezy subscription:', lemonSqueezyError);
+                    console.log('✅ Stripe subscription quantity updated to', newUserCount);
+                } catch (stripeError) {
+                    console.error('❌ Failed to upgrade Stripe subscription:', stripeError);
                     return res.redirect('/dashboard?error=billing_upgrade_failed');
                 }
+            } else {
+                console.log('⚠️ No Stripe subscription ID found, but allowing seat increase');
             }
             
             // Update our database seat count
-            await db('subscriptions')
-                .where('id', subscription.id)
+            await db('tenants')
+                .where('id', tenant.id)
                 .update({ 
-                    seats: newMemberCount,
+                    seats: newUserCount,
                     updated_at: new Date()
                 });
             
-            console.log('✅ Subscription upgraded to', newMemberCount, 'seats');
+            console.log('✅ Tenant upgraded to', newUserCount, 'seats');
         }
         
-        // Check if email is already added
-        const existingMember = await db('team_members')
-            .where('subscription_id', subscription.id)
-            .where('email', email)
+        // Check if email is already in this tenant
+        const existingUser = await db('users')
+            .where('tenant_id', tenant.id)
+            .where('email', email.toLowerCase())
             .first();
         
-        if (existingMember) {
-            console.log('❌ Email already added to team');
+        if (existingUser) {
+            console.log('❌ Email already in tenant');
             return res.redirect('/dashboard?error=email_already_added');
         }
         
-        // Add team member
-        const memberData = {
-            subscription_id: subscription.id,
-            email: email,
-            status: 'invited'
+        // Create a placeholder user record with temporary password
+        // They'll need to register/login to set their actual password
+        const tempPassword = await bcrypt.hash(`temp_${Date.now()}`, 10);
+        
+        const userData = {
+            tenant_id: tenant.id,
+            email: email.toLowerCase(),
+            password_hash: tempPassword,
+            first_name: 'Invited',
+            last_name: 'User',
+            role: 'member',
+            status: 'active'
         };
         
-        await db('team_members').insert(memberData);
-        console.log('✅ Team member added successfully');
+        await db('users').insert(userData);
+        console.log('✅ User invitation added successfully');
         
-        res.redirect('/dashboard?success=member_added');
+        res.redirect('/dashboard?success=user_invited');
     } catch (error) {
-        console.error('❌ Add team member error:', error);
-        res.redirect('/dashboard?error=add_member_failed');
+        console.error('❌ Add user error:', error);
+        res.redirect('/dashboard?error=add_user_failed');
     }
 });
 
-// Remove team member
-router.post('/dashboard/remove-team-member', requireAuth, async (req, res) => {
+// Remove user from tenant (admin only)
+router.post('/remove-user', requireAuth, async (req, res) => {
     try {
-        const { member_id } = req.body;
-        const user = req.user;
+        const { user_id } = req.body;
+        const currentUser = req.user;
+        const tenant = req.tenant;
         
-        console.log('🗑️ Removing team member:', member_id, 'for user:', user.id);
-        
-        // Verify member belongs to user's subscription
-        const member = await db('team_members')
-            .join('subscriptions', 'team_members.subscription_id', 'subscriptions.id')
-            .where('team_members.id', member_id)
-            .where('subscriptions.user_id', user.id)
-            .select('team_members.*')
-            .first();
-        
-        if (member) {
-            await db('team_members').where('id', member_id).del();
-            console.log('✅ Team member removed successfully');
+        // Only admins can remove users
+        if (currentUser.role !== 'admin') {
+            return res.redirect('/dashboard?error=not_authorized');
         }
         
-        res.redirect('/dashboard?success=member_removed');
+        console.log('🗑️ Removing user:', user_id, 'from tenant:', tenant.id);
+        
+        // Verify user belongs to this tenant and isn't the admin
+        const userToRemove = await db('users')
+            .where('id', user_id)
+            .where('tenant_id', tenant.id)
+            .first();
+        
+        if (userToRemove) {
+            // Don't allow removing the admin
+            if (userToRemove.role === 'admin') {
+                return res.redirect('/dashboard?error=cannot_remove_admin');
+            }
+            
+            // Remove the user first
+            await db('users').where('id', user_id).del();
+            console.log('✅ User removed successfully');
+            
+            // Update subscription quantity to reduce billing
+            if (tenant.stripe_subscription_id && tenant.status === 'active') {
+                try {
+                    // Count remaining users
+                    const remainingUsers = await db('users')
+                        .where('tenant_id', tenant.id)
+                        .count('* as count')
+                        .first();
+                    
+                    const newUserCount = parseInt(remainingUsers.count);
+                    
+                    console.log('💰 Reducing subscription from', tenant.seats, 'to', newUserCount, 'seats');
+                    
+                    // Update Stripe subscription (with proration credit)
+                    await stripeService.updateSubscriptionQuantity(
+                        tenant.stripe_subscription_id, 
+                        newUserCount
+                    );
+                    
+                    // Update our database seat count
+                    await db('tenants')
+                        .where('id', tenant.id)
+                        .update({ 
+                            seats: newUserCount,
+                            updated_at: new Date()
+                        });
+                    
+                    console.log('✅ Subscription reduced - user will get prorated credit');
+                    
+                } catch (stripeError) {
+                    console.error('❌ Failed to reduce Stripe subscription:', stripeError);
+                    // Don't fail the user removal, just log the billing issue
+                }
+            }
+        }
+        
+        res.redirect('/dashboard?success=user_removed');
     } catch (error) {
-        console.error('❌ Remove team member error:', error);
-        res.redirect('/dashboard?error=remove_member_failed');
+        console.error('❌ Remove user error:', error);
+        res.redirect('/dashboard?error=remove_user_failed');
     }
 });
 
-// Cancel subscription
-router.post('/dashboard/cancel-subscription', requireAuth, async (req, res) => {
+// Cancel subscription (admin only)
+router.post('/cancel-subscription', requireAuth, async (req, res) => {
     try {
         const user = req.user;
+        const tenant = req.tenant;
         
-        const subscription = await db('subscriptions')
-            .where('user_id', user.id)
-            .where('status', 'active')
-            .first();
+        // Only admins can cancel subscription
+        if (user.role !== 'admin') {
+            return res.redirect('/dashboard?error=not_authorized');
+        }
         
-        if (subscription) {
-            console.log('❌ Cancelling subscription:', subscription.id);
+        if (tenant.stripe_subscription_id) {
+            console.log('❌ Cancelling subscription:', tenant.stripe_subscription_id);
             
-            // First deactivate all team members
-            await deactivateTeamMembersForInactiveSubscription(subscription.id);
+            // Cancel the Stripe subscription
+            await stripeService.cancelSubscription(tenant.stripe_subscription_id);
             
-            // Then cancel the subscription
-            await db('subscriptions').where('id', subscription.id).update({
-                status: 'cancelled',
-                cancelled_at: new Date()
-            });
-            
-            console.log('✅ Subscription cancelled successfully');
+            console.log('✅ Subscription cancellation scheduled');
         }
         
         res.redirect('/dashboard?success=subscription_cancelled');
@@ -236,16 +245,16 @@ router.post('/dashboard/cancel-subscription', requireAuth, async (req, res) => {
 });
 
 // Payment success page
-router.get('/payment/success', async (req, res) => {
+router.get('/success', async (req, res) => {
     try {
         const { plan } = req.query;
-        res.render('payment-success', {
+        res.render('success', {
             title: 'Payment Successful',
             plan: plan || 'your selected'
         });
     } catch (error) {
         console.error('Payment success error:', error);
-        res.render('payment-success', {
+        res.render('success', {
             title: 'Payment Successful',
             plan: 'your selected'
         });
@@ -253,73 +262,190 @@ router.get('/payment/success', async (req, res) => {
 });
 
 // Payment cancelled page
-router.get('/payment/cancelled', (req, res) => {
-    res.render('payment-cancelled', {
-        title: 'Payment Cancelled'
+router.get('/cancelled', (req, res) => {
+    res.render('billing', {
+        title: 'Payment Cancelled',
+        error: 'Payment was cancelled. Please try again.'
     });
 });
 
-// Lemon Squeezy webhook
-router.post('/webhooks/lemonsqueezy', async (req, res) => {
+// Stripe webhook - handles subscription status changes
+router.post('/webhooks/stripe', async (req, res) => {
     try {
-        console.log('🔔 Webhook received from Lemon Squeezy');
+        console.log('🔔 Stripe webhook received');
         
-        // Convert Buffer to string, then parse JSON
-        const rawBody = req.body.toString('utf8');
-        console.log('📦 Raw webhook body:', rawBody.substring(0, 200) + '...');
+        // Parse the raw body as JSON
+        const event = JSON.parse(req.body.toString());
+        console.log('📋 Webhook event type:', event.type);
         
-        const event = JSON.parse(rawBody);
-        console.log('📋 Webhook event type:', event.meta?.event_name);
-        
-        // Process the webhook with Lemon Squeezy service
-        await lemonSqueezyService.processWebhookEvent(event, db);
-        
-        // Handle team member status based on subscription changes
-        if (event.meta?.event_name === 'subscription_cancelled' || 
-            event.meta?.event_name === 'subscription_expired') {
-            
-            const subscriptionId = event.data?.attributes?.first_subscription_item?.subscription_id;
-            
-            if (subscriptionId) {
-                // Find our internal subscription
-                const subscription = await db('subscriptions')
-                    .where('lemon_squeezy_subscription_id', subscriptionId)
-                    .first();
+        // Handle different webhook events
+        switch (event.type) {
+            case 'checkout.session.completed':
+                await handleCheckoutCompleted(event.data.object);
+                break;
                 
-                if (subscription) {
-                    console.log('🚫 Deactivating team members for cancelled/expired subscription');
-                    await deactivateTeamMembersForInactiveSubscription(subscription.id);
-                }
-            }
-        } else if (event.meta?.event_name === 'subscription_resumed' || 
-                   event.meta?.event_name === 'subscription_unpaused') {
-            
-            const subscriptionId = event.data?.attributes?.first_subscription_item?.subscription_id;
-            
-            if (subscriptionId) {
-                // Find our internal subscription
-                const subscription = await db('subscriptions')
-                    .where('lemon_squeezy_subscription_id', subscriptionId)
-                    .first();
+            case 'customer.subscription.created':
+            case 'customer.subscription.updated':
+                await handleSubscriptionUpdated(event.data.object);
+                break;
                 
-                if (subscription) {
-                    console.log('✅ Reactivating team members for resumed subscription');
-                    await reactivateTeamMembersForActiveSubscription(subscription.id);
-                }
-            }
+            case 'customer.subscription.deleted':
+            case 'invoice.payment_failed':
+            case 'customer.subscription.past_due':
+                await handleSubscriptionDeactivated(event.data.object);
+                break;
+                
+            case 'invoice.payment_succeeded':
+                await handlePaymentSucceeded(event.data.object);
+                break;
+                
+            default:
+                console.log('🤷 Unhandled webhook event type:', event.type);
         }
         
         console.log('✅ Webhook processed successfully');
         res.status(200).send('OK');
     } catch (error) {
         console.error('❌ Webhook error:', error);
-        console.error('Raw body type:', typeof req.body);
-        console.error('Raw body:', req.body);
         res.status(400).send('Error processing webhook');
     }
 });
 
-// Export utility functions for use in other parts of the app
-module.exports = router;
-module.exports.deactivateTeamMembersForInactiveSubscription = deactivateTeamMembersForInactiveSubscription;
-module.exports.reactivateTeamMembersForActiveSubscription = reactivateTeamMembersForActiveSubscription; 
+// Helper function to handle checkout completion (including trials)
+async function handleCheckoutCompleted(session) {
+    console.log('✅ Handling checkout completion:', session.id);
+    
+    if (session.client_reference_id) {
+        const tenantId = session.client_reference_id;
+        
+        await db('tenants')
+            .where('id', tenantId)
+            .update({
+                stripe_subscription_id: session.subscription,
+                status: 'active',
+                updated_at: new Date()
+            });
+        
+        console.log('✅ Tenant activated after checkout:', tenantId);
+    }
+}
+
+// Helper function to handle subscription updates
+async function handleSubscriptionUpdated(subscription) {
+    console.log('🔄 Handling subscription update:', subscription.id);
+    
+    const tenant = await db('tenants')
+        .where('stripe_subscription_id', subscription.id)
+        .first();
+    
+    if (tenant) {
+        await db('tenants')
+            .where('id', tenant.id)
+            .update({
+                status: 'active',
+                seats: subscription.quantity || 1,
+                updated_at: new Date()
+            });
+        
+        console.log('✅ Tenant activated:', tenant.id);
+    }
+}
+
+// Helper function to handle subscription deactivation  
+async function handleSubscriptionDeactivated(subscription) {
+    console.log('🚫 Handling subscription deactivation:', subscription.id);
+    
+    const tenant = await db('tenants')
+        .where('stripe_subscription_id', subscription.id)
+        .first();
+    
+    if (tenant) {
+        // Set status based on subscription cancel behavior
+        const status = subscription.canceled_at ? 'cancelled' : 'inactive';
+        
+        // Update tenant status but keep users active until period ends if cancelled
+        await db('tenants')
+            .where('id', tenant.id)
+            .update({
+                status: status,
+                updated_at: new Date()
+            });
+        
+        // Only deactivate users if truly deleted (not just cancelled)
+        if (!subscription.canceled_at) {
+            await db('users')
+                .where('tenant_id', tenant.id)
+                .update({
+                    status: 'inactive',
+                    updated_at: new Date()
+                });
+        }
+        
+        console.log(`🚫 Tenant ${status}:`, tenant.id);
+    }
+}
+
+// Helper function to handle successful payments
+async function handlePaymentSucceeded(invoice) {
+    console.log('💳 Handling payment success for subscription:', invoice.subscription);
+    
+    if (invoice.subscription) {
+        const tenant = await db('tenants')
+            .where('stripe_subscription_id', invoice.subscription)
+            .first();
+        
+        if (tenant) {
+            // Reactivate tenant and users if they were deactivated
+            await db('tenants')
+                .where('id', tenant.id)
+                .update({
+                    status: 'active',
+                    updated_at: new Date()
+                });
+            
+            await db('users')
+                .where('tenant_id', tenant.id)
+                .update({
+                    status: 'active',
+                    updated_at: new Date()
+                });
+            
+            console.log('✅ Tenant and users reactivated after payment:', tenant.id);
+        }
+    }
+}
+
+// Redirect to Stripe billing portal (admin only)
+router.get('/portal', requireAuth, async (req, res) => {
+    try {
+        const user = req.user;
+        const tenant = req.tenant;
+        
+        // Only admins can access billing
+        if (user.role !== 'admin') {
+            return res.redirect('/dashboard?error=not_authorized');
+        }
+        
+        // Must have a Stripe customer ID
+        if (!tenant.stripe_customer_id) {
+            return res.redirect('/dashboard?error=no_billing_setup');
+        }
+        
+        console.log('🏪 Creating billing portal session for:', tenant.stripe_customer_id);
+        
+        // Create Stripe billing portal session
+        const session = await stripeService.createBillingPortalSession(
+            tenant.stripe_customer_id,
+            `${req.protocol}://${req.get('host')}/dashboard`
+        );
+        
+        // Redirect to Stripe's managed billing portal
+        res.redirect(session.url);
+        
+    } catch (error) {
+        console.error('❌ Billing portal error:', error);
+        res.redirect('/dashboard?error=billing_portal_failed');
+    }
+});
+
+module.exports = router; 

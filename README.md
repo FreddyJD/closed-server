@@ -5,8 +5,6 @@ AI-powered sales assistance tool with desktop app licensing and subscription man
 ## Features
 
 - **Web Dashboard**: Subscription and seat management
-- **WorkOS Authentication**: Secure user authentication
-- **Lemon Squeezy Payments**: Subscription billing with 7-day free trials
 - **Per-Seat Licensing**: Manage licenses for team members
 - **Desktop App Integration**: License validation for desktop clients
 - **AI-Powered Cards**: Real-time sales assistance during calls
@@ -15,8 +13,7 @@ AI-powered sales assistance tool with desktop app licensing and subscription man
 
 - **Frontend**: Handlebars templates (simple HTML, no CSS framework)
 - **Backend**: Express.js with PostgreSQL
-- **Authentication**: WorkOS
-- **Payments**: Lemon Squeezy
+- **Payments**: Stripe
 - **Database**: PostgreSQL with Knex.js migrations
 - **AI**: Claude (Anthropic) for battle card generation
 
@@ -48,12 +45,6 @@ WORKOS_CLIENT_ID=your_workos_client_id
 WORKOS_API_KEY=your_workos_api_key
 WORKOS_REDIRECT_URI=http://localhost:4000/auth/callback
 
-# Lemon Squeezy (https://docs.lemonsqueezy.com/api)
-LEMON_SQUEEZY_API_KEY=your_api_key
-LEMON_SQUEEZY_STORE_ID=your_store_id
-LEMON_SQUEEZY_WEBHOOK_SECRET=your_webhook_secret
-LEMON_SQUEEZY_BASIC_VARIANT_ID=basic_plan_variant_id
-LEMON_SQUEEZY_PRO_VARIANT_ID=pro_plan_variant_id
 
 # Claude AI
 CLAUDE_API_KEY=your_claude_api_key
@@ -112,7 +103,7 @@ The application will be available at http://localhost:4000
 - `GET /login` - Login page
 - `GET /dashboard` - User dashboard (requires auth)
 - `GET /subscribe?plan=basic|pro` - Subscribe to plan (requires auth)
-- `POST /auth/login` - WorkOS authentication
+- `POST /login` - WorkOS authentication
 - `GET /auth/callback` - WorkOS callback
 - `GET /auth/logout` - Logout
 

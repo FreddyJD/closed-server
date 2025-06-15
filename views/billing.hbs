@@ -2,25 +2,21 @@
 <div class="container py-5">
     <div class="text-center mb-5">
         <h1 class="display-4 fw-bold mb-4">Choose Your Plan</h1>
-        <p class="lead">Start with a 7-day free trial to explore all features</p>
+        <p class="lead">Simple pricing for AI-powered sales assistance</p>
         
-        <!-- Billing Toggle -->
-        <div class="billing-toggle mb-5">
-            <span class="toggle-label">Monthly</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="billingToggle">
-                <span class="slider"></span>
-            </label>
-            <span class="toggle-label">Yearly <span class="badge badge-success">Save 20%</span></span>
-        </div>
+        {{#if error}}
+            <div class="alert alert-danger">
+                {{error}}
+            </div>
+        {{/if}}
     </div>
 
     <div class="row justify-content-center">
-        <!-- Starter Plan -->
+        <!-- Basic Plan -->
         <div class="col-lg-5 col-md-6 mb-4">
             <div class="pricing-card">
                 <div class="pricing-header">
-                    <h3>Starter</h3>
+                    <h3>Basic</h3>
                     <div class="pricing-icon">
                         <i class="fa fa-user fa-3x"></i>
                     </div>
@@ -30,7 +26,7 @@
                 <div class="pricing-features mb-4">
                     <div class="feature-item">
                         <i class="fa fa-microphone"></i>
-                        <span>Livestream Transcription</span>
+                        <span>Real-time Transcription</span>
                     </div>
                     <div class="feature-item">
                         <i class="fa fa-shield"></i>
@@ -49,19 +45,26 @@
                         <span>20 Hours Recording /week</span>
                     </div>
                     <div class="feature-item">
-                        <i class="fa fa-refresh"></i>
-                        <span>Regular Updates</span>
+                        <i class="fa fa-users"></i>
+                        <span>Up to 5 Team Members</span>
                     </div>
                 </div>
 
                 <div class="pricing-footer">
-                    <div class="trial-info">7-Day Free Trial</div>
                     <div class="price-container">
-                        <span class="price">$18<span class="period">/month</span></span>
-                        <div class="billing-info">Billed monthly</div>
+                        <span class="price">$19<span class="period">/month</span></span>
+                        <div class="billing-info">Per seat, billed monthly</div>
                     </div>
-                    <a href="/subscribe?plan=basic" class="btn btn-outline-primary btn-lg btn-block">
-                        Get Started
+                    <a href="/billing/subscribe?plan=basic" class="btn btn-outline-primary btn-lg btn-block">
+                        {{#if (eq tenant.plan 'basic')}}
+                            {{#if (eq tenant.status 'trialing')}}
+                                Subscribe to Basic
+                            {{else}}
+                                Current Plan
+                            {{/if}}
+                        {{else}}
+                            Choose Basic
+                        {{/if}}
                     </a>
                 </div>
             </div>
@@ -105,23 +108,30 @@
                         <span>Unlimited Recording</span>
                     </div>
                     <div class="feature-item">
-                        <i class="fa fa-refresh"></i>
-                        <span>Priority Updates</span>
+                        <i class="fa fa-users"></i>
+                        <span>Unlimited Team Members</span>
                     </div>
                     <div class="feature-item">
-                        <i class="fa fa-users"></i>
-                        <span>Team Collaboration</span>
+                        <i class="fa fa-headphones"></i>
+                        <span>Priority Support</span>
                     </div>
                 </div>
 
                 <div class="pricing-footer">
-                    <div class="trial-info">7-Day Free Trial</div>
                     <div class="price-container">
-                        <span class="price">$32<span class="period">/month</span></span>
-                        <div class="billing-info">Billed monthly</div>
+                        <span class="price">$39<span class="period">/month</span></span>
+                        <div class="billing-info">Per seat, billed monthly</div>
                     </div>
-                    <a href="/subscribe?plan=pro" class="btn btn-dark btn-lg btn-block">
-                        Get Started
+                    <a href="/billing/subscribe?plan=pro" class="btn btn-dark btn-lg btn-block">
+                        {{#if (eq tenant.plan 'pro')}}
+                            {{#if (eq tenant.status 'trialing')}}
+                                Subscribe to Pro
+                            {{else}}
+                                Current Plan
+                            {{/if}}
+                        {{else}}
+                            Choose Pro
+                        {{/if}}
                     </a>
                 </div>
             </div>
@@ -130,68 +140,13 @@
 
     <div class="text-center mt-5">
         <p class="text-muted">All plans include 7-day free trial • No setup fees • Cancel anytime</p>
+        <p class="text-muted">
+            <a href="/dashboard" class="btn btn-link">← Back to Dashboard</a>
+        </p>
     </div>
 </div>
 
 <style>
-/* Billing Toggle */
-.billing-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-}
-
-.toggle-label {
-    font-weight: 500;
-    color: var(--text-dark);
-}
-
-.toggle-switch {
-    position: relative;
-    width: 60px;
-    height: 30px;
-    display: inline-block;
-}
-
-.toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: 0.4s;
-    border-radius: 30px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 22px;
-    width: 22px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: 0.4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider {
-    background-color: var(--primary-color);
-}
-
-input:checked + .slider:before {
-    transform: translateX(30px);
-}
-
 /* Pricing Cards */
 .pricing-card {
     background: var(--white);
@@ -237,56 +192,15 @@ input:checked + .slider:before {
     margin-bottom: 1rem;
 }
 
-.pricing-icon, .pricing-icon-combo {
+.pricing-icon {
     font-size: 2rem;
     color: var(--primary-color);
     margin-bottom: 1rem;
 }
 
-.pricing-icon-combo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.plus {
-    font-size: 1.5rem;
-    font-weight: bold;
-}
-
 .pricing-description {
     color: var(--text-light);
     font-size: 0.9rem;
-}
-
-.pricing-highlight {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-}
-
-.highlight-title {
-    display: block;
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.highlight-subtitle {
-    display: block;
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.highlight-badge {
-    display: inline-block;
-    background: var(--primary-color);
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    margin-top: 0.5rem;
 }
 
 /* Features */
@@ -312,37 +226,15 @@ input:checked + .slider:before {
     flex-shrink: 0;
 }
 
-.feature-item span:first-of-type {
+.feature-item span {
     flex: 1;
     color: var(--text-dark);
-}
-
-.feature-limit {
-    font-size: 0.9rem;
-    color: var(--text-light);
-    font-weight: 500;
-}
-
-.feature-limit.fast {
-    color: var(--primary-color);
-    font-weight: 600;
-}
-
-.feature-limit.priority {
-    color: #f59e0b;
-    font-weight: 600;
 }
 
 /* Pricing Footer */
 .pricing-footer {
     text-align: center;
     margin-top: auto;
-}
-
-.trial-info {
-    font-size: 0.9rem;
-    color: var(--text-light);
-    margin-bottom: 1rem;
 }
 
 .price-container {
@@ -375,26 +267,5 @@ input:checked + .slider:before {
     .pricing-card {
         margin-bottom: 2rem;
     }
-    
-    .billing-toggle {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
 }
-</style>
-
-<script>
-// Billing toggle functionality
-document.getElementById('billingToggle').addEventListener('change', function() {
-    const monthlyElements = document.querySelectorAll('.monthly');
-    const yearlyElements = document.querySelectorAll('.yearly');
-    
-    if (this.checked) {
-        monthlyElements.forEach(el => el.style.display = 'none');
-        yearlyElements.forEach(el => el.style.display = 'inline');
-    } else {
-        monthlyElements.forEach(el => el.style.display = 'inline');
-        yearlyElements.forEach(el => el.style.display = 'none');
-    }
-});
-</script> 
+</style> 

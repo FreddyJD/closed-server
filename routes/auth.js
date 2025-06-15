@@ -1,370 +1,182 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
 const db = require('../db');
-const workosService = require('../services/workos');
-const { createTrialSubscription } = require('../utils/license');
-const crypto = require('crypto');
+const stripeService = require('../services/stripe');
+const { handleElectronAuth } = require('./desktop');
 
-// WorkOS authentication (login)
-router.get('/login', async (req, res) => {
+// Handle login
+router.post('/login', async (req, res) => {
     try {
-        // Check if WorkOS is configured
-        if (!workosService.isConfigured()) {
-            console.error('WorkOS not configured');
-            return res.send(workosService.getConfigErrorMessage());
+        const { email, password, isElectron } = req.body;
+        
+        if (!email || !password) {
+            req.session.error = 'Email and password are required';
+            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
         }
         
-        const authorizationUrl = workosService.getAuthorizationUrl('login');
-        res.redirect(authorizationUrl);
-    } catch (error) {
-        console.error('WorkOS auth error:', error);
-        req.session.error = 'Authentication failed';
-        res.redirect('/');
-    }
-});
-
-// Electron-specific authentication (returns token instead of redirect)
-router.get('/electron-login', async (req, res) => {
-    try {
-        // Check if WorkOS is configured
-        if (!workosService.isConfigured()) {
-            console.error('WorkOS not configured');
-            return res.send(workosService.getConfigErrorMessage());
-        }
-        
-        // Create special redirect URI for Electron
-        const authorizationUrl = workosService.getAuthorizationUrl() + '&state=electron';
-        res.redirect(authorizationUrl);
-    } catch (error) {
-        console.error('Electron WorkOS auth error:', error);
-        res.status(500).send('Authentication failed');
-    }
-});
-
-// WorkOS callback
-router.get('/callback', async (req, res) => {
-    try {
-        const { code, state } = req.query;
-        
-        if (!code) {
-            throw new Error('No authorization code received');
-        }
-        
-        // Exchange code for user
-        const { user: workosUser } = await workosService.authenticateWithCode(code);
-        
-        // Find or create user in database
-        let user = await db('users').where('workos_user_id', workosUser.id).first();
+        // Find user by email
+        const user = await db('users')
+            .join('tenants', 'users.tenant_id', 'tenants.id')
+            .where('users.email', email.toLowerCase())
+            .select(
+                'users.*',
+                'tenants.status as tenant_status',
+                'tenants.plan as tenant_plan'
+            )
+            .first();
         
         if (!user) {
-            // Create new user
-            const userData = {
-                workos_user_id: workosUser.id,
-                email: workosUser.email,
-                first_name: workosUser.firstName,
-                last_name: workosUser.lastName,
-                profile_picture_url: workosUser.profilePictureUrl
-            };
-            
-            const [newUser] = await db('users').insert(userData).returning('*');
-            user = newUser;
-            
-            // Start free trial for new users
-            await createTrialSubscription(user.id);
+            req.session.error = 'Invalid email or password';
+            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
         }
         
-        // Handle Electron authentication differently
-        if (state === 'electron') {
-            // Generate a temporary auth token for Electron
-            const authToken = crypto.randomBytes(32).toString('hex');
-            
-            // Store token temporarily (you might want to use Redis for this in production)
-            // For now, we'll use a simple in-memory store with expiration
-            global.electronTokens = global.electronTokens || new Map();
-            global.electronTokens.set(authToken, {
-                userId: user.id,
-                email: user.email,
-                expiresAt: Date.now() + (5 * 60 * 1000) // 5 minutes
-            });
-            
-            // Clean up expired tokens
-            for (const [token, data] of global.electronTokens.entries()) {
-                if (data.expiresAt < Date.now()) {
-                    global.electronTokens.delete(token);
-                }
-            }
-            
-            // Redirect to deep link that will open the Electron app
-            const deepLinkUrl = `closedai://auth?token=${authToken}`;
-            
-            return res.render('auth-success', {
-                title: 'Authentication Successful - Closed AI',
-                deepLinkUrl: deepLinkUrl,
-                authToken: authToken
-            });
+        // Check if this is an invited user who needs to set their password
+        const isInvitedUser = user.first_name === 'Invited' && user.last_name === 'User';
+        if (isInvitedUser) {
+            req.session.error = 'You were invited to this team. Please register with this email to set your password.';
+            return res.redirect(`/register${isElectron ? '?isElectron=true' : ''}`);
         }
         
-        // Normal web authentication - set session and redirect to dashboard
+        // Verify password
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        if (!isValidPassword) {
+            req.session.error = 'Invalid email or password';
+            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+        }
+        
+        // Check if user is inactive (suspended)
+        if (user.status === 'inactive') {
+            req.session.error = 'Your account has been suspended. Please contact support.';
+            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+        }
+        
+        // DON'T check tenant status - let them access dashboard to choose plan!
+        
+        console.log('👋 User login:', user.email);
+        
+        // Handle Electron authentication
+        if (isElectron === 'true') {
+            return handleElectronAuth(user, res);
+        }
+        
+        // Normal web authentication
         req.session.user = { id: user.id };
         res.redirect('/dashboard');
         
     } catch (error) {
-        console.error('WorkOS callback error:', error);
-        req.session.error = 'Authentication failed';
-        res.redirect('/');
+        console.error('Login error:', error);
+        req.session.error = 'Login failed. Please try again.';
+        res.redirect(`/login${req.body.isElectron ? '?isElectron=true' : ''}`);
     }
 });
 
-// Electron token validation endpoint
-router.post('/validate-electron-token', async (req, res) => {
+// Handle registration
+router.post('/register', async (req, res) => {
     try {
-        const { token } = req.body;
+        const { email, password, firstName, lastName, isElectron } = req.body;
         
-        if (!token) {
-            return res.status(400).json({
-                success: false,
-                error: 'Token is required'
-            });
+        if (!email || !password || !firstName || !lastName) {
+            req.session.error = 'All fields are required';
+            return res.redirect(`/register${isElectron ? '?isElectron=true' : ''}`);
         }
         
-        global.electronTokens = global.electronTokens || new Map();
-        const tokenData = global.electronTokens.get(token);
-        
-        if (!tokenData) {
-            return res.status(401).json({
-                success: false,
-                error: 'Invalid or expired token'
-            });
+        if (password.length < 6) {
+            req.session.error = 'Password must be at least 6 characters';
+            return res.redirect(`/register${isElectron ? '?isElectron=true' : ''}`);
         }
         
-        if (tokenData.expiresAt < Date.now()) {
-            global.electronTokens.delete(token);
-            return res.status(401).json({
-                success: false,
-                error: 'Token expired'
-            });
-        }
+        // Check if user already exists
+        const existingUser = await db('users').where('email', email.toLowerCase()).first();
         
-        // Get user details
-        const user = await db('users').where('id', tokenData.userId).first();
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
-            });
-        }
-        
-        // STRICT SUBSCRIPTION VALIDATION - NO ACCESS WITHOUT PAYMENT! 💳
-        let hasActiveAccess = false;
-        let subscriptionInfo = null;
-        let accessDeniedReason = '';
-        
-        console.log('🔍 Validating subscription access for user:', user.email);
-        
-        // First check if user is the subscription owner
-        const userSubscription = await db('subscriptions')
-            .where('user_id', user.id)
-            .first(); // Get any subscription, not just active ones
-        
-        if (userSubscription) {
-            console.log('👑 User is subscription owner, status:', userSubscription.status);
+        if (existingUser) {
+            // Check if this is an invited user updating their info
+            const isInvitedUser = existingUser.first_name === 'Invited' && existingUser.last_name === 'User';
             
-            // Only allow access if subscription is active or trialing
-            if (['active', 'trialing'].includes(userSubscription.status)) {
-                hasActiveAccess = true;
-                subscriptionInfo = {
-                    type: 'owner',
-                    status: userSubscription.status,
-                    plan: userSubscription.plan,
-                    seats: userSubscription.seats,
-                    expires_at: userSubscription.expires_at
-                };
-                console.log('✅ Owner has active subscription access');
-            } else {
-                accessDeniedReason = `Your ${userSubscription.plan} subscription is ${userSubscription.status}. Please reactivate your subscription to continue using Closed AI.`;
-                console.log('❌ Owner subscription inactive:', userSubscription.status);
-            }
-        } else {
-            console.log('🔍 Not subscription owner, checking team member status...');
-            
-            // Check if user is a team member with active parent subscription
-            const teamMember = await db('team_members')
-                .join('subscriptions', 'team_members.subscription_id', 'subscriptions.id')
-                .where('team_members.email', user.email)
-                .select(
-                    'team_members.*', 
-                    'subscriptions.status as subscription_status', 
-                    'subscriptions.plan',
-                    'subscriptions.user_id as owner_id'
-                )
-                .first();
-            
-            if (teamMember) {
-                console.log('👥 User is team member, subscription status:', teamMember.subscription_status, 'member status:', teamMember.status);
+            if (isInvitedUser) {
+                // Update the invited user's information
+                const passwordHash = await bcrypt.hash(password, 10);
                 
-                // Check if team member is suspended
-                if (teamMember.status === 'suspended') {
-                    accessDeniedReason = 'Your team access has been suspended. Please contact your team administrator.';
-                    console.log('❌ Team member is suspended');
-                } 
-                // Check if parent subscription is active
-                else if (!['active', 'trialing'].includes(teamMember.subscription_status)) {
-                    accessDeniedReason = `Team subscription is ${teamMember.subscription_status}. Please contact your team administrator to reactivate.`;
-                    console.log('❌ Parent subscription inactive:', teamMember.subscription_status);
-                } 
-                // All good, grant access
-                else {
-                    hasActiveAccess = true;
-                    subscriptionInfo = {
-                        type: 'team_member',
-                        status: teamMember.subscription_status,
-                        plan: teamMember.plan,
-                        member_status: teamMember.status,
-                        owner_id: teamMember.owner_id
-                    };
-                    console.log('✅ Team member has active access');
+                await db('users')
+                    .where('id', existingUser.id)
+                    .update({
+                        password_hash: passwordHash,
+                        first_name: firstName,
+                        last_name: lastName,
+                        updated_at: new Date()
+                    });
+                
+                console.log('✅ Invited user completed registration:', email);
+                
+                // Handle Electron authentication
+                if (isElectron === 'true') {
+                    return handleElectronAuth({...existingUser, first_name: firstName, last_name: lastName}, res);
                 }
+                
+                // Normal web authentication
+                req.session.user = { id: existingUser.id };
+                res.redirect('/dashboard?welcome=true');
+                return;
             } else {
-                accessDeniedReason = 'No subscription found. Please subscribe to Closed AI or ask to be added to a team.';
-                console.log('❌ No subscription or team membership found');
+                req.session.error = 'User with this email already exists';
+                return res.redirect(`/register${isElectron ? '?isElectron=true' : ''}`);
             }
         }
         
-        // DENY ACCESS IF NO VALID SUBSCRIPTION 🚫
-        if (!hasActiveAccess) {
-            console.log('🚫 ACCESS DENIED:', accessDeniedReason);
-            return res.status(403).json({
-                success: false,
-                error: accessDeniedReason,
-                requiresSubscription: true,
-                redirectUrl: 'http://localhost:4000/dashboard' // Redirect to web dashboard to subscribe
+        // Hash password
+        const passwordHash = await bcrypt.hash(password, 10);
+        
+        // Create Stripe customer
+        const customer = await stripeService.createCustomer(
+            email.toLowerCase(),
+            `${firstName} ${lastName}`
+        );
+        
+        // Create tenant with INACTIVE status - only Stripe will activate it
+        const tenantData = {
+            name: `${firstName}'s Team`,
+            stripe_customer_id: customer.id,
+            plan: 'basic',
+            seats: 1,
+            status: 'inactive' // Start inactive until Stripe trial setup completes
+        };
+        
+        const [tenant] = await db('tenants').insert(tenantData).returning('*');
+        
+        // Create user
+        const userData = {
+            tenant_id: tenant.id,
+            email: email.toLowerCase(),
+            password_hash: passwordHash,
+            first_name: firstName,
+            last_name: lastName,
+            role: 'admin' // First user is always admin of their tenant
+        };
+        
+        const [newUser] = await db('users').insert(userData).returning('*');
+        
+        console.log('🆕 New user registered:', newUser.email, 'tenant:', tenant.id);
+        
+        // For Electron, handle differently
+        if (isElectron === 'true') {
+            // Store user session first, then redirect to trial setup
+            req.session.user = { id: newUser.id };
+            return res.render('trial-setup-electron', {
+                title: 'Complete Your Trial Setup',
+                tenant: tenant,
+                user: newUser,
+                isElectron: true
             });
         }
         
-        // Clean up the token (one-time use)
-        global.electronTokens.delete(token);
-        
-        res.json({
-            success: true,
-            user: {
-                id: user.id,
-                email: user.email,
-                firstName: user.first_name,
-                lastName: user.last_name
-            },
-            subscription: subscriptionInfo
-        });
+        // For web users, set session and redirect to trial setup
+        req.session.user = { id: newUser.id };
+        res.redirect('/dashboard');
         
     } catch (error) {
-        console.error('Token validation error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Server error during token validation'
-        });
-    }
-});
-
-// Desktop app periodic access validation
-router.post('/api/desktop/validate-access', async (req, res) => {
-    try {
-        const { userEmail } = req.body;
-        
-        if (!userEmail) {
-            return res.status(400).json({
-                success: false,
-                error: 'User email is required'
-            });
-        }
-        
-        console.log('🔍 Periodic access validation for:', userEmail);
-        
-        // Get user
-        const user = await db('users').where('email', userEmail).first();
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found',
-                shouldLogout: true
-            });
-        }
-        
-        // Same validation logic as token validation
-        let hasActiveAccess = false;
-        let subscriptionInfo = null;
-        let accessDeniedReason = '';
-        
-        // Check if user is subscription owner
-        const userSubscription = await db('subscriptions')
-            .where('user_id', user.id)
-            .first();
-        
-        if (userSubscription) {
-            if (['active', 'trialing'].includes(userSubscription.status)) {
-                hasActiveAccess = true;
-                subscriptionInfo = {
-                    type: 'owner',
-                    status: userSubscription.status,
-                    plan: userSubscription.plan,
-                    seats: userSubscription.seats
-                };
-            } else {
-                accessDeniedReason = `Your ${userSubscription.plan} subscription is ${userSubscription.status}. Please reactivate your subscription.`;
-            }
-        } else {
-            // Check team member status
-            const teamMember = await db('team_members')
-                .join('subscriptions', 'team_members.subscription_id', 'subscriptions.id')
-                .where('team_members.email', user.email)
-                .select(
-                    'team_members.*', 
-                    'subscriptions.status as subscription_status', 
-                    'subscriptions.plan'
-                )
-                .first();
-            
-            if (teamMember) {
-                if (teamMember.status === 'suspended') {
-                    accessDeniedReason = 'Your team access has been suspended. Please contact your team administrator.';
-                } else if (!['active', 'trialing'].includes(teamMember.subscription_status)) {
-                    accessDeniedReason = `Team subscription is ${teamMember.subscription_status}. Please contact your team administrator.`;
-                } else {
-                    hasActiveAccess = true;
-                    subscriptionInfo = {
-                        type: 'team_member',
-                        status: teamMember.subscription_status,
-                        plan: teamMember.plan,
-                        member_status: teamMember.status
-                    };
-                }
-            } else {
-                accessDeniedReason = 'No subscription found. Please subscribe to access Closed AI.';
-            }
-        }
-        
-        if (!hasActiveAccess) {
-            console.log('🚫 Periodic validation failed:', accessDeniedReason);
-            return res.status(403).json({
-                success: false,
-                error: accessDeniedReason,
-                shouldLogout: true,
-                redirectUrl: 'http://localhost:4000/dashboard'
-            });
-        }
-        
-        console.log('✅ Periodic validation passed for:', userEmail);
-        res.json({
-            success: true,
-            subscription: subscriptionInfo
-        });
-        
-    } catch (error) {
-        console.error('❌ Periodic validation error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Server error during access validation'
-        });
+        console.error('Registration error:', error);
+        req.session.error = 'Registration failed. Please try again.';
+        res.redirect(`/register${req.body.isElectron ? '?isElectron=true' : ''}`);
     }
 });
 

@@ -6,3 +6,4 @@ node_modules
 .env.production.local
 package-lock.json
 ngrok.exe
+stripe.exe

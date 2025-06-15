@@ -1,11 +1,42 @@
 <div class="container">
-    {{#if subscription}}
+    {{#if tenant}}
+        {{#if isNewRegistration}}
+            <!-- Welcome Message for New Users -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-success border-success">
+                        <h4 class="alert-heading">🎉 Welcome to Closed AI!</h4>
+                        <p>Your account has been created. Choose a subscription plan to get started!</p>
+                        <hr>
+                        <p class="mb-0">
+                            <a href="/billing" class="btn btn-primary">Choose Your Plan</a>
+                            <span class="mx-2">or</span>
+                            <a href="/download" class="btn btn-outline-success">Download Desktop App</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {{/if}}
+
+        {{#unless isActive}}
+            <!-- Inactive Status - Show Billing Options -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-warning border-warning">
+                        <h4 class="alert-heading">💳 Subscription Required</h4>
+                        <p>To use Closed AI, you need an active subscription. Choose your plan below!</p>
+                        <a href="/billing" class="btn btn-primary">Choose Your Plan</a>
+                    </div>
+                </div>
+            </div>
+        {{/unless}}
+
         <div class="row">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center py-4 border-bottom">
                     <div>
                         <h1 class="h2 mb-1">Dashboard</h1>
-                        <p class="text-muted mb-0">Welcome back!</p>
+                        <p class="text-muted mb-0">Welcome back, {{user.firstName}}!</p>
                     </div>
                     <div>
                         <a href="/download" class="btn btn-success text-white">
@@ -16,116 +47,70 @@
             </div>
         </div>
 
-        <!-- Subscription Info -->
+        <!-- Tenant Info -->
         <div class="row mt-4">
             <div class="col-12">
-                <div class="card border-success">
-                    <div class="card-header bg-success text-white">
+                <div class="card {{#if isActive}}border-success{{else if (eq tenant.status 'cancelled')}}border-danger{{else}}border-warning{{/if}}">
+                    <div class="card-header {{#if isActive}}bg-success{{else if (eq tenant.status 'cancelled')}}bg-danger{{else}}bg-warning{{/if}} text-white">
                         <h4 class="mb-0 text-white">
-                            <i class="fa fa-check-circle me-2 text-white"></i>Active Subscription
+                            {{#if isActive}}
+                                <i class="fa fa-check-circle me-2 text-white"></i>Active Subscription
+                            {{else if (eq tenant.status 'cancelled')}}
+                                <i class="fa fa-times-circle me-2 text-white"></i>Subscription Cancelled
+                            {{else}}
+                                <i class="fa fa-exclamation-triangle me-2 text-white"></i>No Active Subscription
+                            {{/if}}
                         </h4>
                     </div>
                     <div class="card-body">
+                        {{#if (eq tenant.status 'cancelled')}}
+                            <div class="alert alert-danger mb-3">
+                                <h6><i class="fa fa-exclamation-triangle me-2"></i>Subscription Cancelled</h6>
+                                <p class="mb-0">Your subscription has been cancelled and will end at the current billing period. You can reactivate anytime from the billing portal.</p>
+                            </div>
+                        {{/if}}
+                        
                         <div class="row">
                             <div class="col-md-6">
                                 <p class="mb-2">
-                                    <strong>Plan:</strong> {{subscription.plan}}
+                                    <strong>Team:</strong> {{tenant.name}}
                                 </p>
                                 <p class="mb-2">
-                                    <strong>Seats:</strong> {{subscription.seats}}
+                                    <strong>Plan:</strong> {{tenant.plan}}
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Seats:</strong> {{tenant.seats}}
                                 </p>
                             </div>
                             <div class="col-md-6">
                                 <p class="mb-2">
-                                    <strong>Status:</strong> <span class="badge bg-dark">{{subscription.status}}</span>
+                                    <strong>Status:</strong> 
+                                    <span class="badge {{#if isActive}}bg-success{{else if (eq tenant.status 'cancelled')}}bg-danger{{else}}bg-warning{{/if}}">
+                                        {{tenant.status}}
+                                    </span>
                                 </p>
                                 <p class="mb-2">
-                                    <strong>Next billing:</strong> {{formatDate subscription.current_period_end}}
+                                    <strong>Your Role:</strong> <span class="badge {{#if (eq user.role 'admin')}}bg-primary{{else}}bg-secondary{{/if}}">{{user.role}}</span>
                                 </p>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Team Management -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">
-                                <i class="fa fa-users me-2"></i>Team Members
-                            </h4>
-                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addTeamMemberModal">
-                                <i class="fa fa-plus me-1"></i>Add Team Member
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        {{#if teamMembers}}
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Email</th>
-                                            <th>Status</th>
-                                            <th>Joined</th>
-                                            <th>Last Used</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {{#each teamMembers}}
-                                        <tr>
-                                            <td>{{this.email}}</td>
-                                            <td>
-                                                {{#if (eq this.status 'active')}}
-                                                    <span class="badge bg-dark">Active</span>
-                                                {{else}}
-                                                    <span class="badge bg-secondary">Invited</span>
-                                                {{/if}}
-                                            </td>
-                                            <td>
-                                                {{#if this.joined_at}}
-                                                    {{formatDate this.joined_at}}
-                                                {{else}}
-                                                    <em class="text-muted">Not yet</em>
-                                                {{/if}}
-                                            </td>
-                                            <td>
-                                                {{#if this.last_used_at}}
-                                                    {{formatDate this.last_used_at}}
-                                                {{else}}
-                                                    <em class="text-muted">Never</em>
-                                                {{/if}}
-                                            </td>
-                                            <td>
-                                                <form method="POST" action="/dashboard/remove-team-member" style="display: inline;">
-                                                    <input type="hidden" name="member_id" value="{{this.id}}">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                                            onclick="return confirm('Remove {{this.email}} from team?')">
-                                                        <i class="fa fa-times me-1"></i>Remove
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                        {{/each}}
-                                    </tbody>
-                                </table>
-                            </div>
-
+                        
+                        {{#if (eq user.role 'admin')}}
                             <div class="mt-3">
-                                <small class="text-muted">
-                                    Using {{teamMembers.length}} of {{subscription.seats}} seats. 
-                                </small>
-                            </div>
-                        {{else}}
-                            <div class="text-center py-5">
-                                <i class="fa fa-users fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">No team members yet</h5>
-                                <p class="text-muted">Add your first team member by email. They'll get access when they login with WorkOS.</p>
+                                {{#if isActive}}
+                                    <a href="/billing/portal" class="btn btn-outline-info btn-sm me-2">
+                                        🏪 Manage Billing
+                                    </a>
+                                    <button class="btn btn-outline-danger btn-sm" data-toggle="modal" data-target="#cancelSubscriptionModal">
+                                        Cancel Subscription
+                                    </button>
+                                {{else if (eq tenant.status 'cancelled')}}
+                                    <a href="/billing/portal" class="btn btn-primary">
+                                        🔄 Reactivate Subscription
+                                    </a>
+                                {{else}}
+                                    <a href="/billing" class="btn btn-primary">Choose Your Plan</a>
+                                {{/if}}
                             </div>
                         {{/if}}
                     </div>
@@ -133,188 +118,202 @@
             </div>
         </div>
 
-        <!-- Add Team Member Modal -->
-        <div class="modal fade" id="addTeamMemberModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Add Team Member</h5>
-                        <button type="button" class="close" data-dismiss="modal">
-                            <span>&times;</span>
-                        </button>
-                    </div>
-                    <form method="POST" action="/dashboard/add-team-member">
-                        <div class="modal-body">
-                            <div class="alert alert-info">
-                                <h6><i class="fa fa-info-circle me-2"></i>Add Team Member</h6>
-                                <p class="mb-2">Your teammate will gain access to:</p>
-                                <ul class="mb-2">
-                                    <li>✅ AI Battle Cards and context sharing</li>
-                                    <li>✅ Real-time conversation analysis</li>
-                                    <li>✅ Shared team insights</li>
-                                    <li>❌ <strong>No access</strong> to billing or account management</li>
-                                </ul>
-                                {{#if (gte teamMembers.length subscription.seats)}}
-                                    <p class="mb-0">
-                                        <strong>💰 This will cost an additional ${{subscription.price_per_seat}}/month</strong> 
-                                        but you'll be able to share context and collaborate seamlessly!
-                                    </p>
-                                {{else}}
-                                    <p class="mb-0">
-                                        <strong>🆓 No additional cost!</strong> You have {{subtract subscription.seats teamMembers.length}} free seats remaining.
-                                    </p>
-                                {{/if}}
+        {{#if (and isActive (eq user.role 'admin'))}}
+            <!-- Team Management (Admin Only) -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-users me-2"></i>Team Members
+                                </h4>
+                                <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addUserModal">
+                                    <i class="fa fa-plus me-1"></i>Add User
+                                </button>
                             </div>
-                            
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email Address</label>
-                                <input type="email" class="form-control" name="email" id="email" required 
-                                       placeholder="teammate@company.com">
-                                <div class="form-text">
-                                    They'll get access when they login to Closed AI with this email.
+                        </div>
+                        <div class="card-body">
+                            {{#if tenantUsers}}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                                <th>Status</th>
+                                                <th>Joined</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Current User (Admin) -->
+                                            <tr class="table-primary">
+                                                <td>{{user.email}} <em>(You)</em></td>
+                                                <td><span class="badge bg-primary">Admin</span></td>
+                                                <td><span class="badge bg-success">Active</span></td>
+                                                <td>{{formatDate user.created_at}}</td>
+                                                <td><em>Owner</em></td>
+                                            </tr>
+                                            <!-- Other Users -->
+                                            {{#each tenantUsers}}
+                                            <tr>
+                                                <td>{{this.email}}</td>
+                                                <td><span class="badge bg-secondary">{{this.role}}</span></td>
+                                                <td>
+                                                    {{#if (eq this.status 'active')}}
+                                                        <span class="badge bg-success">Active</span>
+                                                    {{else}}
+                                                        <span class="badge bg-warning">{{this.status}}</span>
+                                                    {{/if}}
+                                                </td>
+                                                <td>{{formatDate this.created_at}}</td>
+                                                <td>
+                                                    <form method="POST" action="/billing/remove-user" style="display: inline;">
+                                                        <input type="hidden" name="user_id" value="{{this.id}}">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                                onclick="return confirm('Remove {{this.email}} from team?')">
+                                                            <i class="fa fa-times me-1"></i>Remove
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {{/each}}
+                                        </tbody>
+                                    </table>
                                 </div>
+
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        Using {{add tenantUsers.length 1}} of {{tenant.seats}} seats.
+                                    </small>
+                                </div>
+                            {{else}}
+                                <div class="text-center py-5">
+                                    <i class="fa fa-users fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No team members yet</h5>
+                                    <p class="text-muted">Add your first team member by email. They'll get access when they login.</p>
+                                </div>
+                            {{/if}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add User Modal -->
+            <div class="modal fade" id="addUserModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Team Member</h5>
+                            <button type="button" class="close" data-dismiss="modal">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <form method="POST" action="/billing/add-user">
+                            <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <h6><i class="fa fa-info-circle me-2"></i>Add Team Member</h6>
+                                    <p class="mb-2">Your teammate will gain access to:</p>
+                                    <ul class="mb-2">
+                                        <li>✅ AI Battle Cards and context sharing</li>
+                                        <li>✅ Real-time conversation analysis</li>
+                                        <li>✅ Shared team insights</li>
+                                        <li>❌ <strong>No access</strong> to billing or team management</li>
+                                    </ul>
+                                    {{#if (gte tenantUsers.length tenant.seats)}}
+                                        <p class="mb-0">
+                                            <strong>💰 This will add a new seat to your subscription</strong> 
+                                            and you'll be charged for the additional seat.
+                                        </p>
+                                    {{else}}
+                                        <p class="mb-0">
+                                            <strong>🆓 No additional cost!</strong> You have {{subtract tenant.seats tenantUsers.length}} free seats remaining.
+                                        </p>
+                                    {{/if}}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" name="email" id="email" required 
+                                           placeholder="teammate@company.com">
+                                    <div class="form-text">
+                                        They'll get access when they login to Closed AI with this email.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">
+                                    Add Team Member
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cancel Subscription Modal -->
+            <div class="modal fade" id="cancelSubscriptionModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Cancel Subscription</h5>
+                            <button type="button" class="close" data-dismiss="modal">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <h6><i class="fa fa-exclamation-triangle me-2"></i>Are you sure?</h6>
+                                <p>This will cancel your subscription and:</p>
+                                <ul>
+                                    <li>❌ Disable access for all team members</li>
+                                    <li>❌ Stop AI battle card generation</li>
+                                    <li>❌ Remove access to desktop apps</li>
+                                </ul>
+                                <p class="mb-0">Your subscription will remain active until the end of your current billing period.</p>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">
-                                {{#if (gte teamMembers.length subscription.seats)}}
-                                    Add Member (+${{subscription.price_per_seat}}/mo)
-                                {{else}}
-                                    Add Team Member
-                                {{/if}}
-                            </button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Keep Subscription</button>
+                            <form method="POST" action="/billing/cancel-subscription" style="display: inline;">
+                                <button type="submit" class="btn btn-danger">Yes, Cancel Subscription</button>
+                            </form>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
-        </div>
+        {{/if}}
+
+        {{#unless isActive}}
+            <!-- Show billing options for inactive users -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">💳 Choose Your Plan</h4>
+                        </div>
+                        <div class="card-body text-center">
+                            <p class="mb-4">Select a subscription plan to start using Closed AI's powerful features!</p>
+                            <a href="/billing" class="btn btn-primary btn-lg">
+                                View Plans & Subscribe
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {{/unless}}
 
     {{else}}
-        <!-- Pricing Selection -->
-        <div class="row mt-4">
-            <div class="col-12 text-center mb-4">
-                <h2 class="h3 mb-3">Choose Your Plan</h2>
-                <p class="text-muted">Start with a 7-day free trial to explore all features</p>
-            </div>
-        </div>
-
-        <div class="row justify-content-center">
-            <!-- Starter Plan -->
-            <div class="col-lg-5 col-md-6 mb-4">
-                <div class="pricing-card">
-                    <div class="pricing-header">
-                        <h3>Starter</h3>
-                        <div class="pricing-icon">
-                            <i class="fa fa-user fa-3x"></i>
-                        </div>
-                        <p class="pricing-description">Perfect for individuals getting started with AI sales assistance</p>
-                    </div>
-                    
-                    <div class="pricing-features mb-4">
-                        <div class="feature-item">
-                            <i class="fa fa-microphone"></i>
-                            <span>Livestream Transcription</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-shield"></i>
-                            <span>AI Battle Cards</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-bolt"></i>
-                            <span>Instant AI Responses</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-file-text"></i>
-                            <span>Documentation Handling</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-clock-o"></i>
-                            <span>20 Hours Recording /week</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-refresh"></i>
-                            <span>Regular Updates</span>
-                        </div>
-                    </div>
-
-                    <div class="pricing-footer">
-                        <div class="trial-info">7-Day Free Trial</div>
-                        <div class="price-container">
-                            <span class="price">$18<span class="period">/month</span></span>
-                            <div class="billing-info">Billed monthly</div>
-                        </div>
-                        <a href="/billing/subscribe?plan=basic" class="btn btn-outline-primary btn-lg btn-block">
-                            Get Started
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pro Plan -->
-            <div class="col-lg-5 col-md-6 mb-4">
-                <div class="pricing-card featured">
-                    <div class="recommended-badge">RECOMMENDED</div>
-                    <div class="pricing-header">
-                        <h3>Professional</h3>
-                        <div class="pricing-icon">
-                            <i class="fa fa-users fa-3x"></i>
-                        </div>
-                        <p class="pricing-description">Advanced features for teams and power users</p>
-                    </div>
-
-                    <div class="pricing-features mb-4">
-                        <div class="feature-item">
-                            <i class="fa fa-microphone"></i>
-                            <span>Priority Transcription</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-shield"></i>
-                            <span>Advanced AI Battle Cards</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-bolt"></i>
-                            <span>Instant AI Responses</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-cogs"></i>
-                            <span>Custom AI Training</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-database"></i>
-                            <span>Private AI Training</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-clock-o"></i>
-                            <span>Unlimited Recording</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-refresh"></i>
-                            <span>Priority Updates</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fa fa-users"></i>
-                            <span>Team Collaboration</span>
-                        </div>
-                    </div>
-
-                    <div class="pricing-footer">
-                        <div class="trial-info">7-Day Free Trial</div>
-                        <div class="price-container">
-                            <span class="price">$32<span class="period">/month</span></span>
-                            <div class="billing-info">Billed monthly</div>
-                        </div>
-                        <a href="/billing/subscribe?plan=pro" class="btn btn-dark btn-lg btn-block">
-                            Get Started
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        <!-- No Tenant (shouldn't happen, but just in case) -->
         <div class="row mt-4">
             <div class="col-12 text-center">
-                <p class="text-muted">All plans include 7-day free trial • No setup fees • Cancel anytime</p>
+                <div class="alert alert-danger">
+                    <h4>Error: No tenant found</h4>
+                    <p>There was an issue with your account setup. Please contact support.</p>
+                    <a href="/auth/logout" class="btn btn-danger">Logout</a>
+                </div>
             </div>
         </div>
     {{/if}}

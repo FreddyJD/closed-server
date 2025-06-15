@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const aiService = require('../services/ai');
+const crypto = require('crypto');
 
 // AI-only approach - clean and simple (for desktop app)
 let transcriptionBuffer = [];
-let shownCards = new Set(); // Prevent duplicate cards by ID
-let shownCardTypes = new Set(); // Prevent duplicate card types (e.g., multiple pricing objections)
+let shownCards = new Set(); 
+let shownCardTypes = new Set(); 
 let lastAnalysisTime = 0;
 
 // Health check
@@ -15,8 +16,9 @@ router.get('/health', async (req, res) => {
         status: 'healthy',
         timestamp: new Date().toISOString(),
         services: {
-            workos: !!(require('../config').workos.clientId && require('../config').workos.apiKey),
+            authentication: true, // Our custom auth system
             claude: !!require('../config').claude.apiKey,
+            stripe: !!(require('../config').stripe?.secretKey && require('../config').stripe?.publishableKey),
             database: false
         }
     };
@@ -32,7 +34,126 @@ router.get('/health', async (req, res) => {
     res.json(health);
 });
 
-// Validate user access (simple WorkOS-based check)
+// Handle Electron authentication (called from auth routes)
+function handleElectronAuth(user, res) {
+    // Generate a temporary auth token for Electron
+    const authToken = crypto.randomBytes(32).toString('hex');
+    
+    // Store token temporarily (you might want to use Redis for this in production)
+    global.electronTokens = global.electronTokens || new Map();
+    global.electronTokens.set(authToken, {
+        userId: user.id,
+        email: user.email,
+        expiresAt: Date.now() + (5 * 60 * 1000) // 5 minutes
+    });
+    
+    // Clean up expired tokens
+    for (const [token, data] of global.electronTokens.entries()) {
+        if (data.expiresAt < Date.now()) {
+            global.electronTokens.delete(token);
+        }
+    }
+    
+    // Redirect to deep link that will open the Electron app
+    const deepLinkUrl = `closedai://auth?token=${authToken}`;
+    
+    return res.render('auth-success', {
+        title: 'Authentication Successful - Closed AI',
+        deepLinkUrl: deepLinkUrl,
+        authToken: authToken
+    });
+}
+
+// Electron token validation endpoint
+router.post('/validate-electron-token', async (req, res) => {
+    try {
+        const { token } = req.body;
+        
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                error: 'Token is required'
+            });
+        }
+        
+        global.electronTokens = global.electronTokens || new Map();
+        const tokenData = global.electronTokens.get(token);
+        
+        if (!tokenData) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid or expired token'
+            });
+        }
+        
+        if (tokenData.expiresAt < Date.now()) {
+            global.electronTokens.delete(token);
+            return res.status(401).json({
+                success: false,
+                error: 'Token expired'
+            });
+        }
+        
+        // Get user and tenant details
+        const user = await db('users')
+            .join('tenants', 'users.tenant_id', 'tenants.id')
+            .where('users.id', tokenData.userId)
+            .select(
+                'users.*',
+                'tenants.status as tenant_status',
+                'tenants.plan as tenant_plan'
+            )
+            .first();
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+        
+        // Only check if user is suspended, not tenant status
+        console.log('🔍 Validating user access for:', user.email, 'tenant status:', user.tenant_status);
+        
+        if (user.status === 'inactive') {
+            console.log('🚫 User account suspended');
+            return res.status(403).json({
+                success: false,
+                error: 'Your account has been suspended. Please contact support.',
+                shouldLogout: true
+            });
+        }
+        
+        // Let inactive tenants through - they can see billing options in dashboard
+        
+        // Clean up the token (one-time use)
+        global.electronTokens.delete(token);
+        
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                role: user.role
+            },
+            tenant: {
+                plan: user.tenant_plan,
+                status: user.tenant_status
+            }
+        });
+        
+    } catch (error) {
+        console.error('Token validation error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Server error during token validation'
+        });
+    }
+});
+
+// Desktop app periodic access validation
 router.post('/validate-access', async (req, res) => {
     try {
         const { userEmail } = req.body;
@@ -43,70 +164,51 @@ router.post('/validate-access', async (req, res) => {
                 error: 'User email is required'
             });
         }
-
-        // Check if user exists
+        
+        console.log('🔍 Periodic access validation for:', userEmail);
+        
+        // Get user and tenant
         const user = await db('users')
-            .where('email', userEmail)
+            .join('tenants', 'users.tenant_id', 'tenants.id')
+            .where('users.email', userEmail)
+            .select(
+                'users.*',
+                'tenants.status as tenant_status',
+                'tenants.plan as tenant_plan'
+            )
             .first();
-
+        
         if (!user) {
-            return res.status(403).json({
+            return res.status(404).json({
                 success: false,
-                error: 'User not found'
+                error: 'User not found',
+                shouldLogout: true
             });
         }
-
-        // Check user's own subscription (for solo users)
-        const ownSubscription = await db('subscriptions')
-            .where('user_id', user.id)
-            .where('status', 'active')
-            .first();
-
-        // Check if user is a team member of any active subscription
-        const teamMembership = await db('team_members')
-            .join('subscriptions', 'team_members.subscription_id', 'subscriptions.id')
-            .where('team_members.email', userEmail)
-            .where('subscriptions.status', 'active')
-            .select('team_members.*', 'subscriptions.plan')
-            .first();
-
-        // User has access if they have their own subscription OR are a team member
-        if (!ownSubscription && !teamMembership) {
+        
+        // Only check if user is suspended, not tenant status
+        if (user.status === 'inactive') {
+            console.log('🚫 User account suspended');
             return res.status(403).json({
                 success: false,
-                error: 'No active subscription or team membership found'
+                error: 'Your account has been suspended. Please contact support.',
+                shouldLogout: true
             });
         }
-
-        // Update last used timestamp for team membership
-        if (teamMembership) {
-            await db('team_members')
-                .where('id', teamMembership.id)
-                .update({ 
-                    last_used_at: new Date(),
-                    status: 'active', // Mark as active when they first use the app
-                    joined_at: teamMembership.joined_at || new Date() // Set joined_at if not set
-                });
-        }
-
-        // Update user's last activity
-        await db('users')
-            .where('id', user.id)
-            .update({ updated_at: new Date() });
-
+        
+        // Let inactive tenants through - they can access app and see billing options
+        
+        console.log('✅ Periodic validation passed for:', userEmail);
         res.json({
             success: true,
-            user: {
-                email: user.email,
-                firstName: user.first_name,
-                lastName: user.last_name,
-                plan: ownSubscription?.plan || teamMembership?.plan || 'trial',
-                status: ownSubscription ? 'owner' : 'member'
+            tenant: {
+                plan: user.tenant_plan,
+                status: user.tenant_status
             }
         });
-
+        
     } catch (error) {
-        console.error('❌ Access validation error:', error);
+        console.error('❌ Periodic validation error:', error);
         res.status(500).json({
             success: false,
             error: 'Server error during access validation'
@@ -264,4 +366,6 @@ router.post('/cards/analyze', async (req, res) => {
     }
 });
 
-module.exports = router; 
+// Export the handleElectronAuth function for use in auth routes
+module.exports = router;
+module.exports.handleElectronAuth = handleElectronAuth; 

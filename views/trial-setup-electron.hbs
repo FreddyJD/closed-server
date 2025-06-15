@@ -1,0 +1,123 @@
+{{#section 'title'}}{{title}}{{/section}}
+
+<div class="hero text-center py-5">
+    <div class="success-icon">🎉</div>
+    <h1>Welcome to Closed AI!</h1>
+    <p class="lead">Your account has been created. Complete your 7-day trial setup to get started.</p>
+</div>
+
+<section class="py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-primary h-100">
+                <div class="card-body text-center">
+                    <h3>🎯 Complete Your Trial Setup</h3>
+                    <p class="mb-4">To start using Closed AI, you'll need to set up your 7-day free trial with a credit card. Don't worry - no charges until after your trial!</p>
+                    
+                    {{#if isElectron}}
+                    <div class="alert alert-info mb-4">
+                        <h6><strong>For Desktop App Users:</strong></h6>
+                        <p class="mb-2">Click the button below to complete your trial setup in your browser, then return to the desktop app.</p>
+                    </div>
+                    {{/if}}
+                    
+                    <a href="/billing/setup-trial" class="btn btn-primary btn-lg mb-3" target="_blank">
+                        💳 Complete Trial Setup
+                    </a>
+                    
+                    <div class="mt-4">
+                        <div class="alert alert-success">
+                            <h6><strong>What happens next?</strong></h6>
+                            <ul class="list-unstyled text-start mt-2">
+                                <li>✅ Enter your credit card details (secure Stripe checkout)</li>
+                                <li>🎯 Get instant access to all features for 7 days</li>
+                                <li>🚫 No charges during your trial period</li>
+                                <li>📧 We'll remind you before your trial ends</li>
+                                <li>🔄 Cancel anytime with no charges</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>What you'll get access to:</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="feature-item">
+                                    <div class="feature-icon">🤖</div>
+                                    <h6>AI Sales Assistant</h6>
+                                    <p class="small">Real-time battlecards</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="feature-item">
+                                    <div class="feature-icon">👥</div>
+                                    <h6>Team Collaboration</h6>
+                                    <p class="small">Invite team members</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="feature-item">
+                                    <div class="feature-icon">📊</div>
+                                    <h6>Performance Analytics</h6>
+                                    <p class="small">Track your results</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {{#if isElectron}}
+                    <div class="mt-4">
+                        <p class="text-muted">
+                            <small>After completing the trial setup, you can close this browser window and return to the desktop app.</small>
+                        </p>
+                    </div>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .success-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    
+    .border-primary {
+        border-color: #007bff !important;
+        border-width: 2px;
+    }
+    
+    .feature-item {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .feature-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        padding: 12px 30px;
+        font-size: 1.1rem;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #004085;
+    }
+    
+    .alert-info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+    }
+    
+    .alert-success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+</style> 

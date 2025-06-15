@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const { engine } = require('express-handlebars');
+const db = require('./db');
 
 // WebSocket and Deepgram for transcription
 const { createClient, LiveTranscriptionEvents } = require("@deepgram/sdk");
@@ -16,7 +17,7 @@ dotenv.config();
 const config = require('./config');
 
 const app = express();
-const port = config.port;
+const PORT = process.env.PORT || 4000;
 
 // Handlebars helpers
 const hbsHelpers = {
@@ -25,11 +26,13 @@ const hbsHelpers = {
     },
     multiply: (a, b) => a * b,
     subtract: (a, b) => a - b,
+    add: (a, b) => a + b,
     eq: (a, b) => a === b,
     gt: (a, b) => a > b,
     lt: (a, b) => a < b,
     gte: (a, b) => a >= b,
-    lte: (a, b) => a <= b
+    lte: (a, b) => a <= b,
+    and: (a, b) => a && b
 };
 
 // Configure Handlebars
@@ -37,7 +40,6 @@ app.engine('hbs', engine({
     extname: '.hbs',
     defaultLayout: 'main',
     layoutsDir: __dirname + '/views/layouts/',
-    partialsDir: __dirname + '/views/partials/',
     helpers: hbsHelpers
 }));
 app.set('view engine', 'hbs');
@@ -50,7 +52,7 @@ app.use(cors());
 app.use(express.static('public'));
 
 // Raw body parsing for webhooks (before JSON parsing)
-app.use('/webhooks/lemonsqueezy', express.raw({ type: 'application/json' }));
+app.use('/billing/webhooks/stripe', express.raw({ type: 'application/json' }));
 
 // JSON parsing for all other routes
 app.use(express.json());
@@ -61,7 +63,7 @@ app.use(session({
     secret: config.session.secret,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // Set to true in production with HTTPS
+    cookie: { secure: process.env.NODE_ENV === 'production' }
 }));
 
 // Import route modules
@@ -71,10 +73,35 @@ const billingRoutes = require('./routes/billing');
 const desktopRoutes = require('./routes/desktop');
 
 // Use route modules
-app.use('/auth', authRoutes);         // Auth routes (/auth/login, /auth/callback, /auth/logout)
-app.use('/', webRoutes);              // Web UI routes (/, /login, /dashboard)
-app.use('/', billingRoutes);          // Billing routes (/subscribe, /dashboard/*, /webhooks/lemonsqueezy)
-app.use('/api/desktop', desktopRoutes); // Desktop API routes (/api/desktop/*)
+app.use('/', webRoutes);
+app.use('/auth', authRoutes);
+app.use('/billing', billingRoutes); 
+app.use('/desktop', desktopRoutes);
+
+// Add API health check endpoint
+app.get('/api/health', async (req, res) => {
+    const health = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        services: {
+            authentication: true, // Our custom auth system
+            stripe: !!(config.stripe.secretKey && config.stripe.publishableKey),
+            claude: !!config.claude.apiKey,
+            deepgram: !!config.deepgram.apiKey,
+            database: false
+        }
+    };
+    
+    try {
+        await db.raw('SELECT 1');
+        health.services.database = true;
+    } catch (error) {
+        health.services.database = false;
+        health.database_error = error.message;
+    }
+    
+    res.json(health);
+});
 
 // Add transcription status endpoint for compatibility
 app.get('/status', (req, res) => {
@@ -104,22 +131,36 @@ app.use((error, req, res, next) => {
 });
 
 // Create HTTP server
-const server = app.listen(port, () => {
-    console.log(`🚀 Battle Cards Server running on port ${port}`);
-    console.log(`🌐 Web Interface: http://localhost:${port}`);
-    console.log(`🔧 Health Check: http://localhost:${port}/api/health`);
-    console.log(`🎤 Transcription WebSocket: ws://localhost:${port}`);
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard`);
+    console.log(`🔧 API Health: http://localhost:${PORT}/health`);
+    console.log(`🎤 Transcription WebSocket: ws://localhost:${PORT}`);
     console.log(`📊 Service Status:`);
-    console.log(`   - Database: ${config.database ? '✅' : '❌'}`);
-    console.log(`   - WorkOS: ${config.workos.clientId && config.workos.apiKey ? '✅' : '❌'}`);
-    console.log(`   - Lemon Squeezy: ${config.lemonSqueezy.apiKey && config.lemonSqueezy.storeId ? '✅' : '❌'}`);
+    
+    try {
+        db.raw('SELECT 1').then(() => {
+            console.log(`   - Database: ✅`);
+        }).catch(() => {
+            console.log(`   - Database: ❌`);
+        });
+    } catch (error) {
+        console.log(`   - Database: ❌`);
+    }
+    
+    console.log(`   - Authentication: ✅ (Custom)`);
+    console.log(`   - Stripe: ${config.stripe.secretKey && config.stripe.publishableKey ? '✅' : '❌'}`);
     console.log(`   - Claude AI: ${config.claude.apiKey ? '✅' : '❌'}`);
     console.log(`   - Deepgram: ${config.deepgram.apiKey ? '✅' : '❌'}`);
-    console.log(`\n📖 Setup Guide: See SETUP.md for configuration instructions`);
+    console.log(`\n📖 Setup Guide:`);
+    console.log(`   1. Configure Stripe keys in .env`);
+    console.log(`   2. Set up Claude API key for AI features`);
+    console.log(`   3. Add Deepgram API key for transcription`);
+    console.log(`   4. Run migrations: npm run migrate`);
 });
 
 // Create WebSocket server for transcription
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server: app });
 
 // Handle WebSocket connections for transcription
 wss.on("connection", (ws, req) => {
@@ -127,8 +168,8 @@ wss.on("connection", (ws, req) => {
 
     // Parse query parameters from the URL
     const baseUrl = process.env.NODE_ENV === 'production'
-        ? `ws://localhost:${port}`
-        : `ws://localhost:${port}`;
+        ? `ws://localhost:${PORT}`
+        : `ws://localhost:${PORT}`;
     const url = new URL(req.url, baseUrl);
     const language = url.searchParams.get('language');
     const enableSpeakerDetection = url.searchParams.get('enableSpeakerDetection') === 'true';
