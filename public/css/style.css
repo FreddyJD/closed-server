@@ -64,6 +64,11 @@ body.dashboard-page {
     padding-top: 100px;
 }
 
+/* Auth pages (login, register, billing) need padding for navbar */
+body.auth-page {
+    padding-top: 100px;
+}
+
 /* Marketing pages with hero - no padding, full background */
 body.marketing-page {
     padding-top: 0;

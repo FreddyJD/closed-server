@@ -250,13 +250,15 @@ router.get('/success', async (req, res) => {
         const { plan } = req.query;
         res.render('success', {
             title: 'Payment Successful',
-            plan: plan || 'your selected'
+            plan: plan || 'your selected',
+            isAuthPage: true
         });
     } catch (error) {
         console.error('Payment success error:', error);
         res.render('success', {
             title: 'Payment Successful',
-            plan: 'your selected'
+            plan: 'your selected',
+            isAuthPage: true
         });
     }
 });
@@ -265,7 +267,8 @@ router.get('/success', async (req, res) => {
 router.get('/cancelled', (req, res) => {
     res.render('billing', {
         title: 'Payment Cancelled',
-        error: 'Payment was cancelled. Please try again.'
+        error: 'Payment was cancelled. Please try again.',
+        isAuthPage: true
     });
 });
 

@@ -42,7 +42,8 @@ router.get('/login', (req, res) => {
     const { isElectron } = req.query;
     res.render('login', { 
         error: req.session.error,
-        isElectron: isElectron === 'true'
+        isElectron: isElectron === 'true',
+        isAuthPage: true
     });
     delete req.session.error;
 });
@@ -52,7 +53,8 @@ router.get('/register', (req, res) => {
     const { isElectron } = req.query;
     res.render('register', { 
         error: req.session.error,
-        isElectron: isElectron === 'true'
+        isElectron: isElectron === 'true',
+        isAuthPage: true
     });
     delete req.session.error;
 });
@@ -103,7 +105,8 @@ router.get('/billing', requireAuth, (req, res) => {
     res.render('billing', {
         user: req.user,
         tenant: req.tenant,
-        title: 'Choose Your Plan'
+        title: 'Choose Your Plan',
+        isAuthPage: true
     });
 });
 

@@ -1,23 +1,5 @@
 <div class="container">
     {{#if tenant}}
-        {{#if isNewRegistration}}
-            <!-- Welcome Message for New Users -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="alert alert-success border-success">
-                        <h4 class="alert-heading">🎉 Welcome to Closed AI!</h4>
-                        <p>Your account has been created. Choose a subscription plan to get started!</p>
-                        <hr>
-                        <p class="mb-0">
-                            <a href="/billing" class="btn btn-primary">Choose Your Plan</a>
-                            <span class="mx-2">or</span>
-                            <a href="/download" class="btn btn-outline-success">Download Desktop App</a>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        {{/if}}
-
         {{#unless isActive}}
             <!-- Inactive Status - Show Billing Options -->
             <div class="row">
