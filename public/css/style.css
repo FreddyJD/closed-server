@@ -178,7 +178,6 @@ p {
 .card {
     border: 1px solid var(--border-gray);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
 }
 
 .card-header {
