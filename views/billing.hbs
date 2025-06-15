@@ -48,7 +48,7 @@
 
                 <div class="pricing-footer">
                     <div class="price-container">
-                        <span class="price">$39<span class="period">/month</span></span>
+                        <span class="price">$20<span class="period">/month</span></span>
                         <div class="billing-info">Per seat, billed monthly</div>
                     </div>
                     <a href="/billing/subscribe?plan=basic" class="btn btn-dark btn-lg btn-block">
@@ -99,7 +99,7 @@
 
                 <div class="pricing-footer">
                     <div class="price-container">
-                        <span class="price">$39<span class="period">/month</span></span>
+                        <span class="price">$40<span class="period">/month</span></span>
                         <div class="billing-info">Per seat, billed monthly</div>
                     </div>
                     <a href="/billing/subscribe?plan=pro" class="btn btn-dark btn-lg btn-block">
@@ -128,12 +128,10 @@
     height: 100%;
     position: relative;
     transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
-.pricing-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
-}
 
 .pricing-card.featured {
     border-color: var(--primary-color);
@@ -178,6 +176,7 @@
 /* Features */
 .pricing-features {
     margin: 2rem 0;
+    flex-grow: 1;
 }
 
 .feature-item {
@@ -207,6 +206,7 @@
 .pricing-footer {
     text-align: center;
     margin-top: auto;
+    flex-shrink: 0;
 }
 
 .price-container {
