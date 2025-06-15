@@ -35,10 +35,8 @@ SESSION_SECRET=your_session_secret_here
 */
 
 module.exports = {
-  port: process.env.PORT || 4000,
+  port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
-  
-  // Stripe Configuration
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY,
     publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
@@ -46,29 +44,16 @@ module.exports = {
     basicPriceId: process.env.STRIPE_BASIC_PRICE_ID,
     proPriceId: process.env.STRIPE_PRO_PRICE_ID
   },
-  
-  // Claude AI
   claude: {
     apiKey: process.env.CLAUDE_API_KEY
   },
-
-  // Deepgram (Voice Transcription)
   deepgram: {
     apiKey: process.env.DEEPGRAM_API_KEY
   },
-  
-  // Session
   session: {
     secret: process.env.SESSION_SECRET || 'battlecards-session-secret-change-in-production'
   },
-
-  // Database (for any direct database config if needed)
   database: {
     url: process.env.DATABASE_URL,
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    name: process.env.DB_NAME || 'battlecards_dev',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD
   }
 }; 
