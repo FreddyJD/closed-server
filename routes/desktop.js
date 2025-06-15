@@ -11,59 +11,121 @@ let shownCards = new Set();
 let shownCardTypes = new Set(); 
 let lastAnalysisTime = 0;
 
-// Health check
-router.get('/health', async (req, res) => {
-    const health = {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        services: {
-            authentication: true, // Our custom auth system
-            claude: !!require('../config').claude.apiKey,
-            stripe: !!(require('../config').stripe?.secretKey && require('../config').stripe?.publishableKey),
-            database: false
-        }
-    };
-    
+// Desktop login (more restrictive than web - requires active tenant)
+router.post('/login', async (req, res) => {
     try {
-        await db.raw('SELECT 1');
-        health.services.database = true;
+        const { email, password } = req.body;
+        
+        console.log('🖥️ Desktop login attempt:', { 
+            email: email?.toLowerCase(),
+            hasPassword: !!password
+        });
+        
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email and password are required'
+            });
+        }
+        
+        // Find user by email
+        const user = await db('users')
+            .join('tenants', 'users.tenant_id', 'tenants.id')
+            .where('users.email', email.toLowerCase())
+            .select(
+                'users.*',
+                'tenants.status as tenant_status',
+                'tenants.plan as tenant_plan'
+            )
+            .first();
+        
+        if (!user) {
+            console.log('❌ Desktop: User not found:', email?.toLowerCase());
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid email or password'
+            });
+        }
+        
+        // Check if this is an invited user
+        const isInvitedUser = user.first_name === 'Invited' && user.last_name === 'User';
+        if (isInvitedUser) {
+            return res.status(401).json({
+                success: false,
+                error: 'Please complete your registration on the web first',
+                requiresWebRegistration: true
+            });
+        }
+        
+        // Verify password
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        if (!isValidPassword) {
+            console.log('❌ Desktop: Invalid password for:', user.email);
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid email or password'
+            });
+        }
+        
+        // Check if user is inactive (suspended)
+        if (user.status === 'inactive') {
+            console.log('❌ Desktop: User account inactive:', user.email);
+            return res.status(403).json({
+                success: false,
+                error: 'Your account has been suspended. Please contact support.',
+                shouldLogout: true
+            });
+        }
+        
+        // DESKTOP RESTRICTION: Require active tenant for full access
+        if (user.tenant_status !== 'active') {
+            console.log('🚫 Desktop: Tenant not active:', user.email, 'status:', user.tenant_status);
+            return res.status(403).json({
+                success: false,
+                error: 'Desktop access requires an active subscription. Please visit our website to subscribe.',
+                requiresSubscription: true,
+                tenant_status: user.tenant_status
+            });
+        }
+        
+        console.log('✅ Desktop login successful:', user.email);
+        
+        // Generate auth token for desktop
+        const authToken = crypto.randomBytes(32).toString('hex');
+        
+        // Store token
+        global.electronTokens = global.electronTokens || new Map();
+        global.electronTokens.set(authToken, {
+            userId: user.id,
+            email: user.email,
+            expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours for desktop
+        });
+        
+        res.json({
+            success: true,
+            token: authToken,
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                role: user.role
+            },
+            tenant: {
+                plan: user.tenant_plan,
+                status: user.tenant_status
+            }
+        });
+        
     } catch (error) {
-        health.services.database = false;
-        health.database_error = error.message;
+        console.error('❌ Desktop login error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Login failed. Please try again.'
+        });
     }
-    
-    res.json(health);
 });
 
-// Handle Electron authentication (called from auth routes)
-function handleElectronAuth(user, res) {
-    // Generate a temporary auth token for Electron
-    const authToken = crypto.randomBytes(32).toString('hex');
-    
-    // Store token temporarily (you might want to use Redis for this in production)
-    global.electronTokens = global.electronTokens || new Map();
-    global.electronTokens.set(authToken, {
-        userId: user.id,
-        email: user.email,
-        expiresAt: Date.now() + (5 * 60 * 1000) // 5 minutes
-    });
-    
-    // Clean up expired tokens
-    for (const [token, data] of global.electronTokens.entries()) {
-        if (data.expiresAt < Date.now()) {
-            global.electronTokens.delete(token);
-        }
-    }
-    
-    // Redirect to deep link that will open the Electron app
-    const deepLinkUrl = `closedai://auth?token=${authToken}`;
-    
-    return res.render('auth-success', {
-        title: 'Authentication Successful - Closed AI',
-        deepLinkUrl: deepLinkUrl,
-        authToken: authToken
-    });
-}
 
 // Electron token validation endpoint
 router.post('/validate-electron-token', async (req, res) => {
@@ -367,6 +429,4 @@ router.post('/cards/analyze', async (req, res) => {
     }
 });
 
-// Export the handleElectronAuth function for use in auth routes
 module.exports = router;
-module.exports.handleElectronAuth = handleElectronAuth; 

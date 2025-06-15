@@ -3,17 +3,15 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 const stripeService = require('../services/stripe');
-const { handleElectronAuth } = require('./desktop');
 
-// Handle login
+// Handle login (web only - desktop uses /desktop/login)
 router.post('/login', async (req, res) => {
     try {
-        const { email, password, isElectron } = req.body;
+        const { email, password } = req.body;
         
-        console.log('🔐 Login attempt:', { 
+        console.log('🔐 Web login attempt:', { 
             email: email?.toLowerCase(), 
             hasPassword: !!password,
-            isElectron,
             sessionExists: !!req.session,
             headers: {
                 'user-agent': req.headers['user-agent'],
@@ -25,7 +23,7 @@ router.post('/login', async (req, res) => {
         if (!email || !password) {
             console.log('❌ Missing email or password');
             req.session.error = 'Email and password are required';
-            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+            return res.redirect('/login');
         }
         
         // Find user by email
@@ -42,7 +40,7 @@ router.post('/login', async (req, res) => {
         if (!user) {
             console.log('❌ User not found:', email?.toLowerCase());
             req.session.error = 'Invalid email or password';
-            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+            return res.redirect('/login');
         }
         
         console.log('✅ User found:', { 
@@ -56,7 +54,7 @@ router.post('/login', async (req, res) => {
         const isInvitedUser = user.first_name === 'Invited' && user.last_name === 'User';
         if (isInvitedUser) {
             req.session.error = 'You were invited to this team. Please register with this email to set your password.';
-            return res.redirect(`/register${isElectron ? '?isElectron=true' : ''}`);
+            return res.redirect('/register');
         }
         
         // Verify password
@@ -69,27 +67,23 @@ router.post('/login', async (req, res) => {
         } catch (bcryptError) {
             console.error('❌ Bcrypt error:', bcryptError);
             req.session.error = 'Login failed. Please try again.';
-            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+            return res.redirect('/login');
         }
         
         if (!isValidPassword) {
             console.log('❌ Invalid password for:', user.email);
             req.session.error = 'Invalid email or password';
-            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+            return res.redirect('/login');
         }
         
         // Check if user is inactive (suspended)
         if (user.status === 'inactive') {
             console.log('❌ User account inactive:', user.email);
             req.session.error = 'Your account has been suspended. Please contact support.';
-            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+            return res.redirect('/login');
         }
         
-        console.log('👋 User login successful:', user.email);
-        
-        if (isElectron === 'true') {
-            return handleElectronAuth(user, res);
-        }
+        console.log('👋 Web user login successful:', user.email);
         
         // Normal web authentication
         console.log('💾 Creating session for user:', user.id);
@@ -100,32 +94,32 @@ router.post('/login', async (req, res) => {
             if (err) {
                 console.error('❌ Session save error:', err);
                 req.session.error = 'Login failed. Please try again.';
-                return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+                return res.redirect('/login');
             }
             console.log('✅ Session saved for user:', user.id);
             res.redirect('/dashboard');
         });
         
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('Web login error:', error);
         req.session.error = 'Login failed. Please try again.';
-        res.redirect(`/login${req.body.isElectron ? '?isElectron=true' : ''}`);
+        res.redirect('/login');
     }
 });
 
-// Handle registration
+// Handle registration (web only - desktop users register via web)
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, firstName, lastName, isElectron } = req.body;
+        const { email, password, firstName, lastName } = req.body;
         
         if (!email || !password || !firstName || !lastName) {
             req.session.error = 'All fields are required';
-            return res.redirect(`/register${isElectron ? '?isElectron=true' : ''}`);
+            return res.redirect(`/register`);
         }
         
         if (password.length < 6) {
             req.session.error = 'Password must be at least 6 characters';
-            return res.redirect(`/register${isElectron ? '?isElectron=true' : ''}`);
+            return res.redirect(`/register`);
         }
         
         // Check if user already exists
@@ -150,18 +144,13 @@ router.post('/register', async (req, res) => {
                 
                 console.log('✅ Invited user completed registration:', email);
                 
-                // Handle Electron authentication
-                if (isElectron === 'true') {
-                    return handleElectronAuth({...existingUser, first_name: firstName, last_name: lastName}, res);
-                }
-                
                 // Normal web authentication
                 req.session.user = { id: existingUser.id };
                 res.redirect('/dashboard?welcome=true');
                 return;
             } else {
                 req.session.error = 'User with this email already exists';
-                return res.redirect(`/register${isElectron ? '?isElectron=true' : ''}`);
+                return res.redirect(`/register`);
             }
         }
         
@@ -199,18 +188,6 @@ router.post('/register', async (req, res) => {
         
         console.log('🆕 New user registered:', newUser.email, 'tenant:', tenant.id);
         
-        // For Electron, handle differently
-        if (isElectron === 'true') {
-            // Store user session first, then redirect to trial setup
-            req.session.user = { id: newUser.id };
-            return res.render('trial-setup-electron', {
-                title: 'Complete Your Trial Setup',
-                tenant: tenant,
-                user: newUser,
-                isElectron: true
-            });
-        }
-        
         // For web users, set session and redirect to trial setup
         req.session.user = { id: newUser.id };
         res.redirect('/dashboard');
@@ -218,7 +195,7 @@ router.post('/register', async (req, res) => {
     } catch (error) {
         console.error('Registration error:', error);
         req.session.error = 'Registration failed. Please try again.';
-        res.redirect(`/register${req.body.isElectron ? '?isElectron=true' : ''}`);
+        res.redirect(`/register`);
     }
 });
 
