@@ -159,24 +159,15 @@
                         <form method="POST" action="/billing/add-user">
                             <div class="modal-body">
                                 <div class="alert alert-info">
-                                    <h6><i class="fa fa-info-circle me-2"></i>Add Team Member</h6>
-                                    <p class="mb-2">Your teammate will gain access to:</p>
+                                    <h6><i class="fa fa-info-circle me-2"></i>Welcome Your New Teammate!</h6>
+                                    <p class="mb-2">They'll get instant access to powerful collaboration features:</p>
                                     <ul class="mb-2">
-                                        <li>✅ AI Battle Cards and context sharing</li>
-                                        <li>✅ Real-time conversation analysis</li>
-                                        <li>✅ Shared team insights</li>
-                                        <li>❌ <strong>No access</strong> to billing or team management</li>
+                                        <li><i class="fa fa-check text-success me-2"></i>Smart AI Battle Cards for seamless context sharing</li>
+                                        <li><i class="fa fa-check text-success me-2"></i>Live conversation insights and analysis</li>
+                                        <li><i class="fa fa-check text-success me-2"></i>Team-wide analytics and performance metrics</li>
+                                        <li><i class="fa fa-dollar-sign me-2"></i>Adding a team member will increase your subscription by one seat</li>
+                                        <li><i class="fa fa-shield text-info me-2"></i>Secure access - billing and admin controls remain with you</li>
                                     </ul>
-                                    {{#if (gte tenantUsers.length tenant.seats)}}
-                                        <p class="mb-0">
-                                            <strong>💰 This will add a new seat to your subscription</strong> 
-                                            and you'll be charged for the additional seat.
-                                        </p>
-                                    {{else}}
-                                        <p class="mb-0">
-                                            <strong>🆓 No additional cost!</strong> You have {{subtract tenant.seats tenantUsers.length}} free seats remaining.
-                                        </p>
-                                    {{/if}}
                                 </div>
                                 
                                 <div class="mb-3">
