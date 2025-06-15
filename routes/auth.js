@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const db = require('../db');
 const stripeService = require('../services/stripe');
 const { handleElectronAuth } = require('./desktop');
@@ -60,27 +60,51 @@ router.post('/login', async (req, res) => {
         }
         
         // Verify password
-        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        console.log('🔍 About to check password for:', user.email, 'Hash exists:', !!user.password_hash);
+        
+        let isValidPassword = false;
+        try {
+            isValidPassword = await bcrypt.compare(password, user.password_hash);
+            console.log('🔑 Password check result:', { email: user.email, isValid: isValidPassword });
+        } catch (bcryptError) {
+            console.error('❌ Bcrypt error:', bcryptError);
+            req.session.error = 'Login failed. Please try again.';
+            return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+        }
+        
         if (!isValidPassword) {
+            console.log('❌ Invalid password for:', user.email);
             req.session.error = 'Invalid email or password';
             return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
         }
         
         // Check if user is inactive (suspended)
         if (user.status === 'inactive') {
+            console.log('❌ User account inactive:', user.email);
             req.session.error = 'Your account has been suspended. Please contact support.';
             return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
         }
         
-        console.log('👋 User login:', user.email);
+        console.log('👋 User login successful:', user.email);
         
         if (isElectron === 'true') {
             return handleElectronAuth(user, res);
         }
         
         // Normal web authentication
+        console.log('💾 Creating session for user:', user.id);
         req.session.user = { id: user.id };
-        res.redirect('/dashboard');
+        
+        // Save session explicitly and wait for it
+        req.session.save((err) => {
+            if (err) {
+                console.error('❌ Session save error:', err);
+                req.session.error = 'Login failed. Please try again.';
+                return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
+            }
+            console.log('✅ Session saved for user:', user.id);
+            res.redirect('/dashboard');
+        });
         
     } catch (error) {
         console.error('Login error:', error);

@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const stripeService = require('../services/stripe');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 // Subscribe route - creates Stripe checkout session
 router.get('/subscribe', requireAuth, async (req, res) => {
