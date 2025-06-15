@@ -3,8 +3,15 @@ const db = require('../db');
 // Authentication middleware
 async function requireAuth(req, res, next) {
     try {
+        console.log('🔐 Auth middleware check:', { 
+            sessionExists: !!req.session.user, 
+            userId: req.session.user?.id,
+            sessionId: req.session.id 
+        });
+        
         // Check if user is logged in
         if (!req.session.user || !req.session.user.id) {
+            console.log('❌ No session found, redirecting to login');
             return res.redirect('/login');
         }
         
