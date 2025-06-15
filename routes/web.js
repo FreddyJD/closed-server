@@ -60,6 +60,12 @@ router.get('/register', (req, res) => {
 // Dashboard
 router.get('/dashboard', requireAuth, async (req, res) => {
     try {
+        console.log('📊 Dashboard access:', { 
+            user: req.user?.email, 
+            tenant: req.tenant?.name,
+            tenant_status: req.tenant?.status 
+        });
+        
         const user = req.user;
         const tenant = req.tenant;
         
