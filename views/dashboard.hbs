@@ -32,28 +32,13 @@
         <!-- Tenant Info -->
         <div class="row mt-4">
             <div class="col-12">
-                <div class="card {{#if isActive}}border-success{{else if (eq tenant.status 'cancelled')}}border-danger{{else}}border-warning{{/if}}">
-                    <div class="card-header {{#if isActive}}bg-success{{else if (eq tenant.status 'cancelled')}}bg-danger{{else}}bg-warning{{/if}} text-white">
-                        <h4 class="mb-0 text-white">
-                            {{#if isActive}}
-                                <i class="fa fa-check-circle me-2 text-white"></i>Active Subscription
-                            {{else if (eq tenant.status 'cancelled')}}
-                                <i class="fa fa-times-circle me-2 text-white"></i>Subscription Cancelled
-                            {{else}}
-                                <i class="fa fa-exclamation-triangle me-2 text-white"></i>No Active Subscription
-                            {{/if}}
-                        </h4>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Team Information</h4>
                     </div>
                     <div class="card-body">
-                        {{#if (eq tenant.status 'cancelled')}}
-                            <div class="alert alert-danger mb-3">
-                                <h6><i class="fa fa-exclamation-triangle me-2"></i>Subscription Cancelled</h6>
-                                <p class="mb-0">Your subscription has been cancelled and will end at the current billing period. You can reactivate anytime from the billing portal.</p>
-                            </div>
-                        {{/if}}
-                        
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <p class="mb-2">
                                     <strong>Team:</strong> {{tenant.name}}
                                 </p>
@@ -64,37 +49,16 @@
                                     <strong>Seats:</strong> {{tenant.seats}}
                                 </p>
                             </div>
-                            <div class="col-md-6">
-                                <p class="mb-2">
-                                    <strong>Status:</strong> 
-                                    <span class="badge {{#if isActive}}bg-success{{else if (eq tenant.status 'cancelled')}}bg-danger{{else}}bg-warning{{/if}}">
-                                        {{tenant.status}}
-                                    </span>
-                                </p>
-                                <p class="mb-2">
-                                    <strong>Your Role:</strong> <span class="badge {{#if (eq user.role 'admin')}}bg-primary{{else}}bg-secondary{{/if}}">{{user.role}}</span>
-                                </p>
-                            </div>
-                        </div>
-                        
-                        {{#if (eq user.role 'admin')}}
-                            <div class="mt-3">
-                                {{#if isActive}}
-                                    <a href="/billing/portal" class="btn btn-outline-info btn-sm me-2">
-                                        🏪 Manage Billing
-                                    </a>
-                                    <button class="btn btn-outline-danger btn-sm" data-toggle="modal" data-target="#cancelSubscriptionModal">
-                                        Cancel Subscription
-                                    </button>
-                                {{else if (eq tenant.status 'cancelled')}}
-                                    <a href="/billing/portal" class="btn btn-primary">
-                                        🔄 Reactivate Subscription
-                                    </a>
-                                {{else}}
-                                    <a href="/billing" class="btn btn-primary">Choose Your Plan</a>
+                            <div class="col-md-4 text-end">
+                                {{#if (eq user.role 'admin')}}
+                                    {{#if isActive}}
+                                        <a href="/billing/portal" class="btn btn-outline-primary">
+                                            Manage Billing
+                                        </a>
+                                    {{/if}}
                                 {{/if}}
                             </div>
-                        {{/if}}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -235,57 +199,8 @@
                 </div>
             </div>
 
-            <!-- Cancel Subscription Modal -->
-            <div class="modal fade" id="cancelSubscriptionModal" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Cancel Subscription</h5>
-                            <button type="button" class="close" data-dismiss="modal">
-                                <span>&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="alert alert-warning">
-                                <h6><i class="fa fa-exclamation-triangle me-2"></i>Are you sure?</h6>
-                                <p>This will cancel your subscription and:</p>
-                                <ul>
-                                    <li>❌ Disable access for all team members</li>
-                                    <li>❌ Stop AI battle card generation</li>
-                                    <li>❌ Remove access to desktop apps</li>
-                                </ul>
-                                <p class="mb-0">Your subscription will remain active until the end of your current billing period.</p>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Keep Subscription</button>
-                            <form method="POST" action="/billing/cancel-subscription" style="display: inline;">
-                                <button type="submit" class="btn btn-danger">Yes, Cancel Subscription</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {{/if}}
 
-        {{#unless isActive}}
-            <!-- Show billing options for inactive users -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card border-primary">
-                        <div class="card-header bg-primary text-white">
-                            <h4 class="mb-0">💳 Choose Your Plan</h4>
-                        </div>
-                        <div class="card-body text-center">
-                            <p class="mb-4">Select a subscription plan to start using Closed AI's powerful features!</p>
-                            <a href="/billing" class="btn btn-primary btn-lg">
-                                View Plans & Subscribe
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {{/unless}}
+        {{/if}}
 
     {{else}}
         <!-- No Tenant (shouldn't happen, but just in case) -->
