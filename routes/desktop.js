@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const aiService = require('../services/ai');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 // AI-only approach - clean and simple (for desktop app)
 let transcriptionBuffer = [];
