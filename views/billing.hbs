@@ -48,19 +48,11 @@
 
                 <div class="pricing-footer">
                     <div class="price-container">
-                        <span class="price">$19<span class="period">/month</span></span>
+                        <span class="price">$39<span class="period">/month</span></span>
                         <div class="billing-info">Per seat, billed monthly</div>
                     </div>
-                    <a href="/billing/subscribe?plan=basic" class="btn btn-outline-primary btn-lg btn-block">
-                        {{#if (eq tenant.plan 'basic')}}
-                            {{#if (eq tenant.status 'trialing')}}
-                                Subscribe to Basic
-                            {{else}}
-                                Current Plan
-                            {{/if}}
-                        {{else}}
-                            Choose Basic
-                        {{/if}}
+                    <a href="/billing/subscribe?plan=basic" class="btn btn-dark btn-lg btn-block">
+                        Start Free Trial
                     </a>
                 </div>
             </div>
@@ -111,15 +103,7 @@
                         <div class="billing-info">Per seat, billed monthly</div>
                     </div>
                     <a href="/billing/subscribe?plan=pro" class="btn btn-dark btn-lg btn-block">
-                        {{#if (eq tenant.plan 'pro')}}
-                            {{#if (eq tenant.status 'trialing')}}
-                                Subscribe to Pro
-                            {{else}}
-                                Current Plan
-                            {{/if}}
-                        {{else}}
-                            Choose Pro
-                        {{/if}}
+                         Start Free Trial
                     </a>
                 </div>
             </div>

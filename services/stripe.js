@@ -86,40 +86,6 @@ async function createTrialCheckoutSession(plan, tenant, user, successUrl, cancel
     }
 }
 
-// Create checkout session for subscription
-async function createCheckoutSession(plan, tenant, user, successUrl, cancelUrl) {
-    try {
-        const priceId = plan === 'pro' ? config.stripe.proPriceId : config.stripe.basicPriceId;
-        
-        if (!priceId) {
-            throw new Error(`Price ID not configured for ${plan} plan`);
-        }
-
-        const session = await stripe.checkout.sessions.create({
-            customer: tenant.stripe_customer_id,
-            mode: 'subscription',
-            payment_method_types: ['card'],
-            line_items: [{
-                price: priceId,
-                quantity: tenant.seats
-            }],
-            success_url: successUrl,
-            cancel_url: cancelUrl,
-            client_reference_id: tenant.id,
-            metadata: {
-                tenant_id: tenant.id,
-                user_id: user.id,
-                plan: plan
-            }
-        });
-
-        console.log('✅ Stripe checkout session created:', session.id);
-        return session;
-    } catch (error) {
-        console.error('❌ Error creating checkout session:', error);
-        throw error;
-    }
-}
 
 // Update subscription quantity (when adding/removing users)
 async function updateSubscriptionQuantity(subscriptionId, newQuantity) {
@@ -297,7 +263,7 @@ async function handlePaymentFailed(invoice, db) {
         await db('tenants')
             .where('stripe_subscription_id', subscriptionId)
             .update({
-                status: 'past_due',
+                status: 'inactive',
                 updated_at: new Date()
             });
             
@@ -323,7 +289,7 @@ async function handleSubscriptionDeleted(subscription, db) {
     await db('tenants')
         .where('stripe_subscription_id', subscription.id)
         .update({
-            status: 'cancelled',
+            status: 'inactive',
             updated_at: new Date()
         });
         
@@ -336,7 +302,7 @@ async function handleSubscriptionDeleted(subscription, db) {
         await db('users')
             .where('tenant_id', tenant.id)
             .update({
-                status: 'suspended',
+                status: 'inactive',
                 updated_at: new Date()
             });
     }
@@ -349,7 +315,6 @@ module.exports = {
     getConfigErrorMessage,
     createCustomer,
     createTrialCheckoutSession,
-    createCheckoutSession,
     updateSubscriptionQuantity,
     getSubscription,
     getUpcomingInvoice,

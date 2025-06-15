@@ -31,8 +31,8 @@ router.get('/subscribe', requireAuth, async (req, res) => {
                 updated_at: new Date()
             });
         
-        // Create Stripe checkout session
-        const session = await stripeService.createCheckoutSession(
+        // Create Stripe checkout session with 7-day trial
+        const session = await stripeService.createTrialCheckoutSession(
             plan,
             tenant,
             user,
