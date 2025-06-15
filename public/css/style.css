@@ -136,7 +136,6 @@ p {
 .btn-primary:hover {
     background-color: var(--secondary-color) !important;
     border-color: var(--secondary-color) !important;
-    transform: translateY(-1px);
     box-shadow: var(--shadow-md);
 }
 
@@ -174,7 +173,6 @@ p {
 .btn-secondary:hover {
     background-color: var(--border-gray) !important;
     border-color: var(--border-gray) !important;
-    transform: translateY(-1px);
 }
 
 .card {
@@ -578,7 +576,6 @@ section {
 }
 
 .pricing-card:hover {
-    transform: translateY(-5px);
     box-shadow: var(--shadow-lg);
 }
 
