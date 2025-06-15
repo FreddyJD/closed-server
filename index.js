@@ -102,7 +102,7 @@ app.use('/billing', billingRoutes);
 app.use('/desktop', desktopRoutes);
 
 // Add API health check endpoint
-app.get('/api/health', async (req, res) => {
+app.get('/status', async (req, res) => {
     const health = {
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -126,14 +126,6 @@ app.get('/api/health', async (req, res) => {
     res.json(health);
 });
 
-// Add transcription status endpoint for compatibility
-app.get('/status', (req, res) => {
-    res.json({
-        status: 'operational',
-        timestamp: new Date().toISOString()
-    });
-});
-
 // 404 handler
 app.use('*', (req, res) => {
     res.status(404).send(`
@@ -154,36 +146,15 @@ app.use((error, req, res, next) => {
 });
 
 // Create HTTP server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard`);
     console.log(`🔧 API Health: http://localhost:${PORT}/health`);
     console.log(`🎤 Transcription WebSocket: ws://localhost:${PORT}`);
-    console.log(`📊 Service Status:`);
-    
-    try {
-        db.raw('SELECT 1').then(() => {
-            console.log(`   - Database: ✅`);
-        }).catch(() => {
-            console.log(`   - Database: ❌`);
-        });
-    } catch (error) {
-        console.log(`   - Database: ❌`);
-    }
-    
-    console.log(`   - Authentication: ✅ (Custom)`);
-    console.log(`   - Stripe: ${config.stripe.secretKey && config.stripe.publishableKey ? '✅' : '❌'}`);
-    console.log(`   - Claude AI: ${config.claude.apiKey ? '✅' : '❌'}`);
-    console.log(`   - Deepgram: ${config.deepgram.apiKey ? '✅' : '❌'}`);
-    console.log(`\n📖 Setup Guide:`);
-    console.log(`   1. Configure Stripe keys in .env`);
-    console.log(`   2. Set up Claude API key for AI features`);
-    console.log(`   3. Add Deepgram API key for transcription`);
-    console.log(`   4. Run migrations: npm run migrate`);
 });
 
 // Create WebSocket server for transcription
-const wss = new WebSocketServer({ server: app });
+const wss = new WebSocketServer({ server: server });
 
 // Handle WebSocket connections for transcription
 wss.on("connection", (ws, req) => {

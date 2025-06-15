@@ -126,7 +126,6 @@ router.post('/login', async (req, res) => {
     }
 });
 
-
 // Electron token validation endpoint
 router.post('/validate-electron-token', async (req, res) => {
     try {
