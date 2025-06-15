@@ -17,8 +17,6 @@ exports.up = async function(knex) {
     table.enum('status', ['active', 'inactive']).defaultTo('active');
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table.timestamp('updated_at').defaultTo(knex.fn.now());
-    
-    // Indexes for performance
     table.index(['stripe_customer_id']);
     table.index(['stripe_subscription_id']);
     table.index(['status']);
@@ -36,8 +34,6 @@ exports.up = async function(knex) {
     table.enum('status', ['active', 'inactive']).defaultTo('active');
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table.timestamp('updated_at').defaultTo(knex.fn.now());
-    
-    // Indexes for performance
     table.index(['tenant_id']);
     table.index(['email']);
     table.index(['status']);

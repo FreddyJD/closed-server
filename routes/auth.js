@@ -51,11 +51,8 @@ router.post('/login', async (req, res) => {
             return res.redirect(`/login${isElectron ? '?isElectron=true' : ''}`);
         }
         
-        // DON'T check tenant status - let them access dashboard to choose plan!
-        
         console.log('👋 User login:', user.email);
         
-        // Handle Electron authentication
         if (isElectron === 'true') {
             return handleElectronAuth(user, res);
         }
